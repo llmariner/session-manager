@@ -1,0 +1,27 @@
+auth:
+  jwks:
+    url: "https://login.cloudnatix.com/oauth2/aus202ft6fhz9alff4x7/v1/keys"
+    certRefreshInterval:
+
+identifier:
+  static:
+    id: local-cluster
+
+httpPort: 8080
+adminPort: 8081
+agentHttpPort: 8082
+
+tls:
+  enable: false
+  secretName:
+
+allowedOriginHosts:
+- localhost
+
+debugLog: false
+
+image:
+  repository: public.ecr.aws/v8n3t7y5/llm-operator/session-manager-server
+  pullPolicy: IfNotPresent
+
+replicaCount: 1

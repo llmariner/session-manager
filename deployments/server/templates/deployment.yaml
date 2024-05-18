@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "session-manager-server.fullname" . }}
+  labels:
+    {{- include "session-manager-server.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "session-manager-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "session-manager-server.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ sha256sum (toJson .Values) }}
+    spec:
+      containers:
+      - name: proxy
+        image: "{{ .Values.image.repository }}:{{ default .Chart.Version .Values.version }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - --config
+        - /var/run/config/config.yaml
+        {{- if .Values.debugLog | default false | eq true }}
+        - -v=10
+        {{- end }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.httpPort }}
+          protocol: TCP
+        - name: admin
+          containerPort: {{ .Values.adminPort }}
+          protocol: TCP
+        - name: agent-http
+          containerPort: {{ .Values.agentHttpPort }}
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: {{ .Values.adminPort }}
+        readinessProbe:
+          httpGet:
+            path: /_/ready
+            port: {{ .Values.adminPort }}
+        volumeMounts:
+        - name: config
+          mountPath: /var/run/config
+          readOnly: true
+        {{- if .Values.tls.enable -}}
+        - name: tls
+          mountPath: /var/run/tls
+          readOnly: true
+        {{- end }}
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "session-manager-server.fullname" . }}
+      {{- if .Values.tls.enable -}}
+      - name: tls
+        secret:
+          secretName: {{ .Values.tls.secretName }}
+      {{- end }}

@@ -1,0 +1,77 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "session-manager-agent.fullname" . }}
+  labels:
+    {{- include "session-manager-agent.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "session-manager-agent.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "session-manager-agent.selectorLabels" . | nindent 8 }}
+      annotations:
+        checksum/config: {{ sha256sum (toJson .Values) }}
+    spec:
+      serviceAccountName: {{ include "session-manager-agent.serviceAccountName" . }}
+      containers:
+      - name: agent
+        image: "{{ .Values.image.repository }}:{{ default .Chart.Version .Values.version }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        args:
+        - --config
+        - /tmp/config/config.yaml
+        {{- if .Values.debugLogging | default false | eq true }}
+        - -v=10
+        {{- end }}
+        volumeMounts:
+        - name: config
+          mountPath: /tmp/config
+          readOnly: true
+        - name: sockets
+          mountPath: /tmp/sockets
+        ports:
+        - containerPort: {{ .Values.httpPort }}
+          name: http
+          protocol: TCP
+        readinessProbe:
+          {{- toYaml .Values.readinessProbe | nindent 10 }}
+          httpGet:
+            path: /ready
+            port: http
+            scheme: HTTP
+
+      - name: envoy
+        image: mirror.gcr.io/envoyproxy/envoy:v1.26.6
+        imagePullPolicy: IfNotPresent
+        args:
+        - envoy
+        - --config-path
+        - /tmp/envoy/envoy.yaml
+        {{- if .Values.debug | default false | eq true }}
+        - --log-level
+        - trace
+        {{- end }}
+        securityContext:
+          runAsUser: 101
+          allowPrivilegeEscalation: false
+        # TODO(nickt): composite / custom liveness probe?
+        # livenessProbe:
+        # TODO(nickt): implement a gRPC healthcheck endpoint
+        # readinessProbe: {}
+        volumeMounts:
+        - name: config
+          mountPath: /tmp/envoy
+          readOnly: true
+        - name: sockets
+          mountPath: /tmp/sockets
+
+      volumes:
+      - name: config
+        configMap:
+          name: {{ include "session-manager-agent.fullname" . }}
+      - name: sockets
+        emptyDir: {}
