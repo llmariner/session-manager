@@ -44,8 +44,9 @@ type Admin struct {
 
 // Auth is the authentication configuration for the proxy.
 type Auth struct {
-	Static *StaticAuth `yaml:"static,omitempty"`
-	JWKS   *JWKSAuth   `yaml:"jwks,omitempty"`
+	Static     *StaticAuth     `yaml:"static,omitempty"`
+	JWKS       *JWKSAuth       `yaml:"jwks,omitempty"`
+	RBACServer *RBACServerAuth `yaml:"rbacServer"`
 }
 
 // StaticAuth is the configuration for a server.JWTAuthenticator using a
@@ -59,6 +60,11 @@ type StaticAuth struct {
 type JWKSAuth struct {
 	URL     string        `yaml:"url"`
 	Refresh time.Duration `yaml:"refreshInterval"`
+}
+
+// RBACServerAuth is the configuration for authentication with RBAC server.
+type RBACServerAuth struct {
+	Addr string `yaml:"addr"`
 }
 
 // Identifier is the configuration for the proxy's identifier.

@@ -3,9 +3,11 @@ package auth
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"testing"
 
 	"github.com/golang-jwt/jwt"
+	"github.com/llm-operator/rbac-manager/pkg/auth"
 	ijwt "github.com/llm-operator/session-manager/common/pkg/jwt"
 	"github.com/stretchr/testify/assert"
 )
@@ -61,6 +63,79 @@ func TestJWTAuthenticator(t *testing.T) {
 			err := a.Authenticate(tc.req)
 			if err != nil {
 				assert.ErrorIs(t, tc.err, err)
+				return
+			}
+			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestRBACServerAuthenticatorTest(t *testing.T) {
+	tcs := []struct {
+		name     string
+		req      *http.Request
+		userInfo auth.UserInfo
+		wantErr  error
+	}{
+		{
+			name: "auth passes",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/api/v1/namespaces/my-namespace/pods/",
+				},
+			},
+			userInfo: auth.UserInfo{
+				KubernetesNamespace: "my-namespace",
+			},
+			wantErr: nil,
+		},
+		{
+			name: "different namespace",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/api/v1/namespaces/different-namespace/pods/",
+				},
+			},
+			userInfo: auth.UserInfo{
+				KubernetesNamespace: "my-namespace",
+			},
+			wantErr: ErrUnauthorized,
+		},
+		{
+			name: "invalid path",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "invalid-path",
+				},
+			},
+			userInfo: auth.UserInfo{
+				KubernetesNamespace: "my-namespace",
+			},
+			wantErr: ErrUnauthorized,
+		},
+		{
+			name: "invalid path",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/api/v1/namespaces/",
+				},
+			},
+			userInfo: auth.UserInfo{
+				KubernetesNamespace: "my-namespace",
+			},
+			wantErr: ErrUnauthorized,
+		},
+	}
+
+	for _, tc := range tcs {
+		t.Run(tc.name, func(t *testing.T) {
+			i := &fakeRequsetIntercepter{
+				userInfo: tc.userInfo,
+			}
+			a := RBACServerAuthenticator{i}
+			err := a.Authenticate(tc.req)
+			if err != nil {
+				assert.ErrorIs(t, tc.wantErr, err)
 				return
 			}
 			assert.NoError(t, err)
@@ -168,4 +243,12 @@ func header(key, value string) http.Header {
 	h := http.Header{}
 	h.Set(key, value)
 	return h
+}
+
+type fakeRequsetIntercepter struct {
+	userInfo auth.UserInfo
+}
+
+func (f *fakeRequsetIntercepter) InterceptHTTPRequest(req *http.Request) (int, auth.UserInfo, error) {
+	return http.StatusOK, f.userInfo, nil
 }

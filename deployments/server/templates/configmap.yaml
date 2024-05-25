@@ -11,16 +11,21 @@ data:
     server:
       port: {{ .Values.httpPort }}
       agentPort: {{ .Values.agentHttpPort }}
-      # Be able to inject TLS if set
-      {{- if .Values.tls.enable -}}
+      {{- if .Values.tls.enable }}
       tls:
         cert: /var/run/tls/tls.crt
         key: /var/run/tls/tls.key
       {{- end }}
       auth:
+        {{- if .Values.auth.jwks.enable }}
         jwks:
           url: {{ .Values.auth.jwks.Url }}
           refreshInterval: {{ .Values.auth.jwks.certRefreshInterval }}
+        {{- end }}
+        {{- if .Values.global.auth.enable }}
+        rbacServer:
+          addr: {{ .Values.global.auth.rbacInternalServerAddr }}
+        {{- end }}
       identifier:
         static:
           id: {{ .Values.identifier.static.id }}

@@ -33,28 +33,6 @@ var rootCmd = &cobra.Command{
 }
 
 func run(ctx context.Context, c *config.Config) error {
-	// Authentication.
-	var validator jwt.Validator
-	/*
-		if c.Server.Auth.Static != nil {
-			v, err := jwt.NewStaticValidator(c.Server.Auth.Static.Path)
-			if err != nil {
-				return err
-			}
-			validator = v
-		} else if c.Server.Auth.JWKS != nil {
-			v, err := jwt.NewJWKSValidator(ctx, c.Server.Auth.JWKS.URL, jwt.JWKSValidatorOpts{
-				Refresh: c.Server.Auth.JWKS.Refresh,
-			})
-			if err != nil {
-				return err
-			}
-			validator = v
-		} else {
-			return fmt.Errorf("auth must be specified")
-		}
-	*/
-
 	var identifier auth.Identifier
 	if s := c.Server.Identifier.Static; s != nil {
 		identifier = auth.NewStaticIdentifier(s.ID)
@@ -64,12 +42,36 @@ func run(ctx context.Context, c *config.Config) error {
 		return fmt.Errorf("identifier must be specified")
 	}
 
-	authenticators := []auth.Authenticator{
-		// Always perform JWT based auth.
-		auth.NewJWTAuthenticator(validator),
+	var authenticators []auth.Authenticator
+	if s := c.Server.Auth.Static; s != nil {
+		v, err := jwt.NewStaticValidator(s.Path)
+		if err != nil {
+			return err
+		}
+		authenticators = append(authenticators, auth.NewJWTAuthenticator(v))
 	}
 
-	// TODO(kenji): Add extra check with rbac-server.
+	if j := c.Server.Auth.JWKS; j != nil {
+		v, err := jwt.NewJWKSValidator(ctx, j.URL, jwt.JWKSValidatorOpts{
+			Refresh: j.Refresh,
+		})
+		if err != nil {
+			return err
+		}
+		authenticators = append(authenticators, auth.NewJWTAuthenticator(v))
+	}
+
+	if r := c.Server.Auth.RBACServer; r != nil {
+		a, err := auth.NewRBACServerAuthenticator(ctx, r.Addr)
+		if err != nil {
+			return err
+		}
+		authenticators = append(authenticators, a)
+	}
+
+	if len(authenticators) == 0 {
+		return fmt.Errorf("authenticator must be specified")
+	}
 
 	// External HTTPS server.
 	httpProxy := proxy.NewHTTPProxy()
