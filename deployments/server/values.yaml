@@ -1,6 +1,12 @@
+global:
+  auth:
+    enable: true
+    rbacInternalServerAddr:
+
 auth:
   jwks:
-    url: "https://login.cloudnatix.com/oauth2/aus202ft6fhz9alff4x7/v1/keys"
+    enable: false
+    url:
     certRefreshInterval:
 
 identifier:

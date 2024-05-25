@@ -327,8 +327,6 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate the request.
-	// TODO(kenji): Authenticate this request with rbac server.
-
 	err := s.authenticator.Authenticate(r)
 	if err != nil {
 		klog.Infof("Authentication failed: %s", err)
@@ -366,17 +364,20 @@ func (s *Server) doHandshakeWithAgent(w http.ResponseWriter, r *http.Request) (c
 	klog.Infof("Handling handshake (host: %s)", r.Host)
 
 	// Authenticate the request.
-	// TODO(kenji): Authenticate this request with rbac server.
+	// TODO(kenji): Remove the authenticator now assuming that the agent port is
+	// exposed only to the internal k8s cluster.
+	/*
 
-	err := s.authenticator.Authenticate(r)
-	if err != nil {
-		klog.Infof("Authentication failed: %s", err)
-		http.Error(w, "not authorized", http.StatusUnauthorized)
-		return
-	}
+		err := s.authenticator.Authenticate(r)
+		if err != nil {
+			klog.Infof("Authentication failed: %s", err)
+			http.Error(w, "not authorized", http.StatusUnauthorized)
+			return
+		}
+	*/
 
 	// Identify the request.
-	id, err = s.identifier.Identify(r)
+	id, err := s.identifier.Identify(r)
 	if err != nil {
 		klog.Infof("Identification failed: %s", err)
 		http.Error(w, "could not identify request", http.StatusBadRequest)

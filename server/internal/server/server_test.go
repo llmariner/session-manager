@@ -34,12 +34,14 @@ func TestServer_doHandshakeWithAgent(t *testing.T) {
 		wantID   string
 		wantConn net.Conn
 	}{
-		{
-			name:          "auth fails",
-			authenticator: &fakeAuthenticator{valid: false},
-			req:           &http.Request{},
-			wantCode:      http.StatusUnauthorized,
-		},
+		/*
+			{
+				name:          "auth fails",
+				authenticator: &fakeAuthenticator{valid: false},
+				req:           &http.Request{},
+				wantCode:      http.StatusUnauthorized,
+			},
+		*/
 		{
 			name:          "identification fails",
 			authenticator: &fakeAuthenticator{valid: true},
