@@ -13,6 +13,8 @@ identifier:
   static:
     id: local-cluster
 
+baseUrl: /v1/sessions
+
 httpPort: 8080
 adminPort: 8081
 agentHttpPort: 8082

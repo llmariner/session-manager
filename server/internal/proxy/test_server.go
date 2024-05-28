@@ -17,22 +17,26 @@ type testServerOpts struct {
 	hostname   string
 	socketPath string
 	greeting   string
+	// returnPath is true if the server should return the request path in the response.
+	returnPath bool
 }
 
 // testServer is a plaintext HTTP/2 server that returns a greeting.
 type testServer struct {
 	socketPath string
 	greeting   string
+	returnPath bool
 
 	srv *http.Server
 }
 
 // newTestServer returns a new testServer that will listen on the given socket
 // path and return the given greeting.
-func newTestServer(socketPath, greeting string) *testServer {
+func newTestServer(socketPath, greeting string, returnPath bool) *testServer {
 	s := &testServer{
 		socketPath: socketPath,
 		greeting:   greeting,
+		returnPath: returnPath,
 	}
 	s.srv = &http.Server{
 		// Explicitly enable H2C support on the server. Without this, the server
@@ -52,7 +56,12 @@ func (s *testServer) run() error {
 }
 
 // handle is the HTTP handler that returns the greeting.
-func (s *testServer) handle(w http.ResponseWriter, _ *http.Request) {
+func (s *testServer) handle(w http.ResponseWriter, r *http.Request) {
+	if s.returnPath {
+		_, _ = w.Write([]byte(r.URL.Path))
+		return
+	}
+
 	_, _ = w.Write([]byte(s.greeting))
 }
 
@@ -60,7 +69,7 @@ func (s *testServer) handle(w http.ResponseWriter, _ *http.Request) {
 func setupServers(opts []testServerOpts) {
 	var wg sync.WaitGroup
 	for _, o := range opts {
-		s1 := newTestServer(o.socketPath, o.greeting)
+		s1 := newTestServer(o.socketPath, o.greeting, o.returnPath)
 
 		// Start the server.
 		wg.Add(1)

@@ -97,15 +97,15 @@ func (a *RBACServerAuthenticator) Authenticate(r *http.Request) error {
 		return ErrUnauthorized
 	}
 
-	if !strings.HasPrefix(r.URL.Path, "/api/v1/namespaces/") {
+	if !strings.HasPrefix(r.URL.Path, "/v1/sessions/api/v1/namespaces/") {
 		// Unexpected path.
 		return ErrUnauthorized
 	}
 	s := strings.Split(r.URL.Path, "/")
-	if len(s) < 5 {
+	if len(s) < 7 {
 		return ErrUnauthorized
 	}
-	namespace := s[4]
+	namespace := s[6]
 	if userInfo.KubernetesNamespace != namespace {
 		return ErrUnauthorized
 	}

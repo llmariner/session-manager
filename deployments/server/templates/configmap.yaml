@@ -29,5 +29,6 @@ data:
       identifier:
         static:
           id: {{ .Values.identifier.static.id }}
+      baseUrl: {{ .Values.baseUrl }}
       allowedOriginHosts:
       {{- toYaml .Values.allowedOriginHosts | nindent 6 }}

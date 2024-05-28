@@ -81,7 +81,7 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 			name: "auth passes",
 			req: &http.Request{
 				URL: &url.URL{
-					Path: "/api/v1/namespaces/my-namespace/pods/",
+					Path: "/v1/sessions/api/v1/namespaces/my-namespace/pods/",
 				},
 			},
 			userInfo: auth.UserInfo{
@@ -93,7 +93,7 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 			name: "different namespace",
 			req: &http.Request{
 				URL: &url.URL{
-					Path: "/api/v1/namespaces/different-namespace/pods/",
+					Path: "/v1/sessions//api/v1/namespaces/different-namespace/pods/",
 				},
 			},
 			userInfo: auth.UserInfo{
@@ -117,7 +117,7 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 			name: "invalid path",
 			req: &http.Request{
 				URL: &url.URL{
-					Path: "/api/v1/namespaces/",
+					Path: "/v1/sessions/api/v1/namespaces/",
 				},
 			},
 			userInfo: auth.UserInfo{
