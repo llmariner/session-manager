@@ -23,6 +23,10 @@ type Server struct {
 	Auth       Auth       `yaml:"auth"`
 	Identifier Identifier `yaml:"identifier"`
 
+	// BaseURL is the base URL of the server. When receiving a request, the server
+	// will strip the BaseURL from the request URL before forwarding it to the agent.
+	BaseURL string `yaml:"baseUrl"`
+
 	TLS *TLS `yaml:"tls"`
 	// AllowedOriginHosts is a slice of Origin hosts that we allow in CORS preflight check.
 	AllowedOriginHosts []string `yaml:"allowedOriginHosts"`

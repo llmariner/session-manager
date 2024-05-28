@@ -23,13 +23,16 @@ const varyHeaderName = "vary"
 type HTTPProxy struct {
 	pool   *h2ConnPool
 	client *http.Client
+
+	baseURL string
 }
 
 // NewHTTPProxy returns a new HTTPProxy.
-func NewHTTPProxy() *HTTPProxy {
+func NewHTTPProxy(baseURL string) *HTTPProxy {
 	t := &http2.Transport{}
 	return &HTTPProxy{
-		pool: newH2ConnPool(t),
+		baseURL: baseURL,
+		pool:    newH2ConnPool(t),
 		client: &http.Client{
 			Transport: t,
 		},
@@ -53,6 +56,7 @@ func (t *HTTPProxy) Proxy(w http.ResponseWriter, r *http.Request) {
 	// Set the scheme and host.
 	r.URL.Host = r.Host
 	r.URL.Scheme = "https"
+	r.URL.Path = strings.TrimPrefix(r.URL.Path, t.baseURL)
 
 	// NOTE: Request.RequestURI can't be set in client requests.
 	// http://golang.org/src/pkg/net/http/client.go

@@ -74,7 +74,7 @@ func run(ctx context.Context, c *config.Config) error {
 	}
 
 	// External HTTPS server.
-	httpProxy := proxy.NewHTTPProxy()
+	httpProxy := proxy.NewHTTPProxy(c.Server.BaseURL)
 	upgradeProxy := proxy.NewUpgradeProxy()
 	httpProxy.SetObserver(upgradeProxy)
 	s := server.NewServer(server.Opts{
