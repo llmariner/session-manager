@@ -128,7 +128,8 @@ func (t *Tunnel) dialLocalEnvoy() (io.ReadWriteCloser, error) {
 		}
 
 		klog.Infof("Dialing local Envoy (socket: %q)", t.envoySocket)
-		conn, err := net.Dial("unix", t.envoySocket)
+		d := net.Dialer{Timeout: t.dialTimeout}
+		conn, err := d.Dial("unix", t.envoySocket)
 		if err == nil {
 			localConn = conn
 			break
@@ -157,8 +158,9 @@ func (t *Tunnel) dialConnectProxy() (io.ReadWriteCloser, error) {
 		klog.Infof("Dialing session-manager-server (%q).", t.url.Host)
 
 		// TODO(kenji): Switch to TLS with configuration.
+		d := net.Dialer{Timeout: t.dialTimeout}
 		//conn, err = tls.Dial("tcp", t.url.Host, &tls.Config{})
-		conn, err := net.Dial("tcp", t.url.Host)
+		conn, err := d.Dial("tcp", t.url.Host)
 		if err == nil {
 			tcpConn = conn
 			break
