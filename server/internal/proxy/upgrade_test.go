@@ -20,7 +20,7 @@ func TestUpgradeProxy_AddRemove(t *testing.T) {
 	id := "foo"
 	conn := &net.TCPConn{}
 
-	p := NewUpgradeProxy()
+	p := NewUpgradeProxy("")
 
 	// Add a single connection to the pool.
 	err := p.Add(id, conn)
@@ -113,7 +113,7 @@ func TestUpgradeProxy_Proxy(t *testing.T) {
 	assert.NoError(t, err)
 
 	id := "test:80"
-	p := NewUpgradeProxy()
+	p := NewUpgradeProxy("")
 	err = p.Add(id, conn)
 	assert.NoError(t, err)
 
