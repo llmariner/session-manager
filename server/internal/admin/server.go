@@ -53,7 +53,7 @@ func (s *Server) Run() error {
 
 // handleReady always returns a 200 response.
 func (s *Server) handleReady(w http.ResponseWriter, _ *http.Request) {
-	klog.Infof("handling ready request")
+	klog.V(1).Infof("handling ready request")
 	_, _ = w.Write([]byte("ok\n"))
 }
 
