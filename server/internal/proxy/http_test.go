@@ -84,6 +84,7 @@ func TestHTTPProxy_BaseURL(t *testing.T) {
 
 	// Proxy a request through the tunnel.
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s/v1/sessions/api/v1/namespaces", key), nil)
+	assert.NoError(t, err)
 
 	w := httptest.NewRecorder()
 	tunnel.Proxy(w, req)
