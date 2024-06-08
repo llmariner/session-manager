@@ -29,6 +29,7 @@ spec:
         {{- end }}
         {{- with .Values.global.worker.registrationKeySecret }}
         {{- if .name }}
+	env:
         - name: LLMO_CLUSTER_REGISTRATION_KEY
           valueFrom:
             secretKeyRef:
