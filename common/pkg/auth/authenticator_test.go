@@ -81,23 +81,50 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 			name: "auth passes",
 			req: &http.Request{
 				URL: &url.URL{
-					Path: "/v1/sessions/api/v1/namespaces/my-namespace/pods/",
+					Path: "/v1/sessions/my-cluster/api/v1/namespaces/my-namespace/pods/",
 				},
 			},
 			userInfo: auth.UserInfo{
-				KubernetesNamespace: "my-namespace",
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
 			},
 			wantErr: nil,
+		},
+		{
+			name: "different cluster",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/v1/sessions/different-cluster/api/v1/namespaces/my-namespace/pods/",
+				},
+			},
+			userInfo: auth.UserInfo{
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
+			},
+			wantErr: ErrUnauthorized,
 		},
 		{
 			name: "different namespace",
 			req: &http.Request{
 				URL: &url.URL{
-					Path: "/v1/sessions//api/v1/namespaces/different-namespace/pods/",
+					Path: "/v1/sessions/my-cluster/api/v1/namespaces/different-namespace/pods/",
 				},
 			},
 			userInfo: auth.UserInfo{
-				KubernetesNamespace: "my-namespace",
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
 			},
 			wantErr: ErrUnauthorized,
 		},
@@ -109,7 +136,12 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 				},
 			},
 			userInfo: auth.UserInfo{
-				KubernetesNamespace: "my-namespace",
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
 			},
 			wantErr: ErrUnauthorized,
 		},
@@ -117,11 +149,16 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 			name: "invalid path",
 			req: &http.Request{
 				URL: &url.URL{
-					Path: "/v1/sessions/api/v1/namespaces/",
+					Path: "/v1/sessions/my-cluster/apiserver/api/v1/namespaces/",
 				},
 			},
 			userInfo: auth.UserInfo{
-				KubernetesNamespace: "my-namespace",
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
 			},
 			wantErr: ErrUnauthorized,
 		},
@@ -139,6 +176,41 @@ func TestRBACServerAuthenticatorTest(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
+		})
+	}
+}
+
+func TestExtractRoute(t *testing.T) {
+	tcs := []struct {
+		path   string
+		want   route
+		wantOK bool
+	}{
+		{
+			path: "/v1/sessions/my-cluster/api/v1/namespaces/my-namespace/pods",
+			want: route{
+				clusterID: "my-cluster",
+				namespace: "my-namespace",
+				path:      "/api/v1/namespaces/my-namespace/pods",
+			},
+			wantOK: true,
+		},
+		{
+			path:   "/v1/clusters",
+			wantOK: false,
+		},
+		{
+			path:   "/v1/a/b/c/d/e/f/g",
+			wantOK: false,
+		},
+	}
+	for _, tc := range tcs {
+		t.Run(tc.path, func(t *testing.T) {
+			r, ok := extractRoute(tc.path)
+			assert.Equal(t, tc.wantOK, ok)
+			if tc.wantOK {
+				assert.Equal(t, tc.want, r)
+			}
 		})
 	}
 }
