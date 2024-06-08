@@ -97,20 +97,47 @@ func (a *RBACServerAuthenticator) Authenticate(r *http.Request) error {
 		return ErrUnauthorized
 	}
 
-	if !strings.HasPrefix(r.URL.Path, "/v1/sessions/api/v1/namespaces/") {
-		// Unexpected path.
+	route, ok := extractRoute(r.URL.Path)
+	if !ok {
 		return ErrUnauthorized
 	}
-	s := strings.Split(r.URL.Path, "/")
-	if len(s) < 7 {
-		return ErrUnauthorized
+
+	var found bool
+	for _, kenv := range userInfo.AssignedKubernetesEnvs {
+		if kenv.ClusterID == route.clusterID && kenv.Namespace == route.namespace {
+			found = true
+			break
+		}
 	}
-	namespace := s[6]
-	if userInfo.KubernetesNamespace != namespace {
+
+	if !found {
 		return ErrUnauthorized
 	}
 
 	return nil
+}
+
+type route struct {
+	clusterID string
+	namespace string
+	path      string
+}
+
+func extractRoute(origPath string) (route, bool) {
+	s := strings.Split(origPath, "/")
+	if len(s) < 7 {
+		return route{}, false
+	}
+
+	if !(s[0] == "" && s[1] == "v1" && s[2] == "sessions") {
+		return route{}, false
+	}
+
+	return route{
+		clusterID: s[3],
+		namespace: s[7],
+		path:      "/" + strings.Join(s[4:], "/"),
+	}, true
 }
 
 // CompositeAuthenticator is an Authenticator that wraps a number of inner
