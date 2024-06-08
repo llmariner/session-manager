@@ -11,10 +11,9 @@ import (
 
 // Config is the configuration for the agent.
 type Config struct {
-	ID    string `yaml:"id"`
-	Admin Admin  `yaml:"admin"`
-	Proxy Proxy  `yaml:"proxy"`
-	Envoy Envoy  `yaml:"envoy"`
+	Admin Admin `yaml:"admin"`
+	Proxy Proxy `yaml:"proxy"`
+	Envoy Envoy `yaml:"envoy"`
 
 	// HTTPPort is the port that the agent listens on for HTTP connections.
 	HTTPPort int `yaml:"httpPort"`

@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	"github.com/llm-operator/session-manager/common/pkg/auth"
-	"github.com/llm-operator/session-manager/common/pkg/jwt"
 	"github.com/llm-operator/session-manager/server/internal/admin"
 	"github.com/llm-operator/session-manager/server/internal/config"
 	"github.com/llm-operator/session-manager/server/internal/proxy"
@@ -33,56 +32,27 @@ var rootCmd = &cobra.Command{
 }
 
 func run(ctx context.Context, c *config.Config) error {
-	var identifier auth.Identifier
-	if s := c.Server.Identifier.Static; s != nil {
-		identifier = auth.NewStaticIdentifier(s.ID)
-	} else if h := c.Server.Identifier.HostBased; h != nil {
-		identifier = auth.NewHostBasedIdentifier(h.Port)
-	} else {
-		return fmt.Errorf("identifier must be specified")
-	}
-
-	var authenticators []auth.Authenticator
-	if s := c.Server.Auth.Static; s != nil {
-		v, err := jwt.NewStaticValidator(s.Path)
-		if err != nil {
-			return err
-		}
-		authenticators = append(authenticators, auth.NewJWTAuthenticator(v))
-	}
-
-	if j := c.Server.Auth.JWKS; j != nil {
-		v, err := jwt.NewJWKSValidator(ctx, j.URL, jwt.JWKSValidatorOpts{
-			Refresh: j.Refresh,
-		})
-		if err != nil {
-			return err
-		}
-		authenticators = append(authenticators, auth.NewJWTAuthenticator(v))
-	}
-
-	if r := c.Server.Auth.RBACServer; r != nil {
-		a, err := auth.NewRBACServerAuthenticator(ctx, r.Addr)
-		if err != nil {
-			return err
-		}
-		authenticators = append(authenticators, a)
-	}
-
-	if len(authenticators) == 0 {
-		return fmt.Errorf("authenticator must be specified")
-	}
-
 	// External HTTPS server.
-	httpProxy := proxy.NewHTTPProxy(c.Server.BaseURL)
-	upgradeProxy := proxy.NewUpgradeProxy(c.Server.BaseURL)
+	httpProxy := proxy.NewHTTPProxy()
+	upgradeProxy := proxy.NewUpgradeProxy()
 	httpProxy.SetObserver(upgradeProxy)
+
+	wauth, err := auth.NewWorkerAuthenticator(ctx, c.Server.Auth.RBACServer.Addr)
+	if err != nil {
+		return fmt.Errorf("new worker authenticator: %w", err)
+	}
+
+	eauth, err := auth.NewExternalAuthenticator(ctx, c.Server.Auth.RBACServer.Addr)
+	if err != nil {
+		return fmt.Errorf("new worker authenticator: %w", err)
+	}
+
 	s := server.NewServer(server.Opts{
-		HTTPProxy:          httpProxy,
-		UpgradeProxy:       upgradeProxy,
-		Authenticator:      auth.NewCompositeAuthenticator(authenticators...),
-		Identifier:         identifier,
-		AllowedOriginHosts: c.Server.GetAllowedOriginHosts(),
+		HTTPProxy:             httpProxy,
+		UpgradeProxy:          upgradeProxy,
+		AgentAuthenticator:    wauth,
+		ExternalAuthenticator: eauth,
+		AllowedOriginHosts:    c.Server.GetAllowedOriginHosts(),
 	})
 
 	errS := make(chan error)
@@ -118,8 +88,6 @@ func run(ctx context.Context, c *config.Config) error {
 	go func() {
 		errAdminS <- adminS.Run()
 	}()
-
-	var err error
 
 	// Await first error.
 	select {

@@ -25,7 +25,6 @@ func TestServer_doHandshakeWithAgent(t *testing.T) {
 	tcs := []struct {
 		name          string
 		authenticator auth.Authenticator
-		identifier    auth.Identifier
 
 		req        *http.Request
 		hijackFunc func() (net.Conn, *bufio.ReadWriter, error)
@@ -34,43 +33,23 @@ func TestServer_doHandshakeWithAgent(t *testing.T) {
 		wantID   string
 		wantConn net.Conn
 	}{
-		/*
-			{
-				name:          "auth fails",
-				authenticator: &fakeAuthenticator{valid: false},
-				req:           &http.Request{},
-				wantCode:      http.StatusUnauthorized,
-			},
-		*/
-		{
-			name:          "identification fails",
-			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{err: fmt.Errorf("auth error")},
-			req:           &http.Request{},
-			wantCode:      http.StatusBadRequest,
-		},
 		{
 			name:          "missing protocol header",
 			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{id: id},
 			req:           &http.Request{},
 			wantCode:      http.StatusBadRequest,
-			wantID:        fmt.Sprintf("%s:443", id),
 		},
 		{
 			name:          "unknown protocol",
 			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{id: id},
 			req: &http.Request{
 				Header: header(common.HeaderProto, "unknown"),
 			},
 			wantCode: http.StatusBadRequest,
-			wantID:   fmt.Sprintf("%s:443", id),
 		},
 		{
 			name:          "upgrade fails",
 			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{id: id},
 			req: &http.Request{
 				Header: header(common.HeaderProto, common.ProtoV1),
 			},
@@ -78,12 +57,10 @@ func TestServer_doHandshakeWithAgent(t *testing.T) {
 				return nil, nil, fmt.Errorf("uh oh")
 			},
 			wantCode: http.StatusSwitchingProtocols,
-			wantID:   fmt.Sprintf("%s:443", id),
 		},
 		{
 			name:          "upgrade succeeds",
-			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{id: id},
+			authenticator: &fakeAuthenticator{valid: true, clusterID: id},
 			req: &http.Request{
 				Header: header(common.HeaderProto, common.ProtoV1),
 			},
@@ -91,7 +68,7 @@ func TestServer_doHandshakeWithAgent(t *testing.T) {
 				return conn, nil, fmt.Errorf("uh oh")
 			},
 			wantCode: http.StatusSwitchingProtocols,
-			wantID:   fmt.Sprintf("%s:443", id),
+			wantID:   id,
 			wantConn: &net.TCPConn{},
 		},
 	}
@@ -99,8 +76,7 @@ func TestServer_doHandshakeWithAgent(t *testing.T) {
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			s := Server{
-				authenticator: tc.authenticator,
-				identifier:    tc.identifier,
+				agentAuthenticator: tc.authenticator,
 			}
 
 			w := &fakeResponseWriter{
@@ -139,10 +115,9 @@ func TestServer_handleAgentHTTP(t *testing.T) {
 
 	p := &fakeProxy{}
 	s := &Server{
-		httpProxy:     p,
-		upgradeProxy:  &fakeProxy{},
-		authenticator: &fakeAuthenticator{valid: true},
-		identifier:    &fakeIdentifier{id: id},
+		httpProxy:          p,
+		upgradeProxy:       &fakeProxy{},
+		agentAuthenticator: &fakeAuthenticator{valid: true, clusterID: id},
 	}
 
 	conn := &net.TCPConn{}
@@ -159,7 +134,7 @@ func TestServer_handleAgentHTTP(t *testing.T) {
 	s.handleAgentHTTP(w, req)
 
 	assert.Equal(t, http.StatusSwitchingProtocols, w.Result().StatusCode)
-	assert.Equal(t, id+":443", p.id)
+	assert.Equal(t, id, p.id)
 	assert.Equal(t, conn, p.conn)
 }
 
@@ -168,10 +143,9 @@ func TestServer_handleAgentConnect(t *testing.T) {
 
 	p := &fakeProxy{}
 	s := &Server{
-		httpProxy:     &fakeProxy{},
-		upgradeProxy:  p,
-		authenticator: &fakeAuthenticator{valid: true},
-		identifier:    &fakeIdentifier{id: id},
+		httpProxy:          &fakeProxy{},
+		upgradeProxy:       p,
+		agentAuthenticator: &fakeAuthenticator{valid: true, clusterID: id},
 	}
 
 	conn := &net.TCPConn{}
@@ -188,7 +162,7 @@ func TestServer_handleAgentConnect(t *testing.T) {
 	s.handleAgentConnect(w, req)
 
 	assert.Equal(t, http.StatusSwitchingProtocols, w.Result().StatusCode)
-	assert.Equal(t, id+":443", p.id)
+	assert.Equal(t, id, p.id)
 	assert.Equal(t, conn, p.conn)
 }
 
@@ -301,7 +275,6 @@ func TestServer_handleProxy(t *testing.T) {
 	tcs := []struct {
 		name          string
 		authenticator auth.Authenticator
-		identifier    auth.Identifier
 
 		req *http.Request
 
@@ -315,26 +288,25 @@ func TestServer_handleProxy(t *testing.T) {
 			wantCode:      http.StatusUnauthorized,
 		},
 		{
-			name:          "identification fails",
-			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{err: fmt.Errorf("auth error")},
-			req:           &http.Request{},
-			wantCode:      http.StatusBadRequest,
-		},
-		{
 			name:          "tunnel type HTTP",
-			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{id: id},
-			req:           &http.Request{}, // no upgrade header
-			wantCode:      http.StatusSwitchingProtocols,
-			wantProxy:     tunnelTypeHTTP,
+			authenticator: &fakeAuthenticator{valid: true, clusterID: id},
+			req: &http.Request{
+				// no upgrade header
+				URL: &url.URL{
+					Path: "/dummy",
+				},
+			},
+			wantCode:  http.StatusSwitchingProtocols,
+			wantProxy: tunnelTypeHTTP,
 		},
 		{
 			name:          "tunnel type CONNECT",
-			authenticator: &fakeAuthenticator{valid: true},
-			identifier:    &fakeIdentifier{id: id},
+			authenticator: &fakeAuthenticator{valid: true, clusterID: id},
 			req: &http.Request{
 				Header: header("upgrade", common.ProtoV1),
+				URL: &url.URL{
+					Path: "/dummy",
+				},
 			},
 			wantCode:  http.StatusSwitchingProtocols,
 			wantProxy: tunnelTypeUpgrade,
@@ -347,10 +319,9 @@ func TestServer_handleProxy(t *testing.T) {
 			connectProxy := &fakeProxy{}
 
 			s := &Server{
-				httpProxy:     httpProxy,
-				upgradeProxy:  connectProxy,
-				authenticator: tc.authenticator,
-				identifier:    tc.identifier,
+				httpProxy:             httpProxy,
+				upgradeProxy:          connectProxy,
+				externalAuthenticator: tc.authenticator,
 			}
 
 			w := httptest.NewRecorder()
@@ -383,10 +354,9 @@ func TestServer_handleProxy(t *testing.T) {
 
 func TestServer_preflight(t *testing.T) {
 	s := &Server{
-		httpProxy:     &fakeProxy{},
-		upgradeProxy:  &fakeProxy{},
-		authenticator: &fakeAuthenticator{},
-		identifier:    &fakeIdentifier{},
+		httpProxy:             &fakeProxy{},
+		upgradeProxy:          &fakeProxy{},
+		externalAuthenticator: &fakeAuthenticator{},
 		allowedOriginHosts: map[string]struct{}{
 			"app.staging.llm-operator.com": {},
 			"app.llm-operator.com":         {},
@@ -438,10 +408,9 @@ func TestServer_preflight(t *testing.T) {
 
 func TestServer_preflightNotAllowed(t *testing.T) {
 	s := &Server{
-		httpProxy:     &fakeProxy{},
-		upgradeProxy:  &fakeProxy{},
-		authenticator: &fakeAuthenticator{},
-		identifier:    &fakeIdentifier{},
+		httpProxy:             &fakeProxy{},
+		upgradeProxy:          &fakeProxy{},
+		externalAuthenticator: &fakeAuthenticator{},
 		allowedOriginHosts: map[string]struct{}{
 			"app.staging.llm-operator.com": {},
 			"app.llm-operator.com":         {},
@@ -498,15 +467,16 @@ func (w *fakeResponseWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 
 // fakeAuthenticator is an Authenticator for use in tests.
 type fakeAuthenticator struct {
-	valid bool
+	valid     bool
+	clusterID string
 }
 
 // Authenticate implements Authenticator by return any stored error.
-func (a *fakeAuthenticator) Authenticate(_ *http.Request) error {
+func (a *fakeAuthenticator) Authenticate(_ *http.Request) (string, string, error) {
 	if !a.valid {
-		return auth.ErrUnauthorized
+		return "", "", auth.ErrUnauthorized
 	}
-	return nil
+	return a.clusterID, "path", nil
 }
 
 // fakeIdentifier is an Identifier for use in tests.

@@ -1,9 +1,15 @@
+global:
+  worker:
+    registrationKeySecret:
+      name:
+      key:
+
 # The ID of this cluster.
-clusterId: local-cluster-id
+envoyClusterId: local-cluster-id
 
 proxy:
   # Address of the proxy, in host:port format.
-  address: session-manager-server-agent-http:8082
+  address: session-manager-server-worker-service-http:8082
   http:
     # pool size of the HTTP tunnel
     poolSize: 3

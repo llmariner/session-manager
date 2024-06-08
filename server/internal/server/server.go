@@ -28,29 +28,35 @@ const (
 
 // Server is the public facing HTTP server, used to proxy requests to a cluster.
 type Server struct {
-	httpProxy          proxy.Proxy
-	upgradeProxy       proxy.Proxy
-	authenticator      auth.Authenticator
-	identifier         auth.Identifier
+	httpProxy    proxy.Proxy
+	upgradeProxy proxy.Proxy
+
+	agentAuthenticator    auth.Authenticator
+	externalAuthenticator auth.Authenticator
+
 	allowedOriginHosts map[string]struct{}
 }
 
 // Opts are options for a Server.
 type Opts struct {
-	HTTPProxy          proxy.Proxy
-	UpgradeProxy       proxy.Proxy
-	Authenticator      auth.Authenticator
-	Identifier         auth.Identifier
+	HTTPProxy    proxy.Proxy
+	UpgradeProxy proxy.Proxy
+
+	AgentAuthenticator    auth.Authenticator
+	ExternalAuthenticator auth.Authenticator
+
 	AllowedOriginHosts map[string]struct{}
 }
 
 // NewServer instantiates a new Server.
 func NewServer(opts Opts) *Server {
 	return &Server{
-		httpProxy:          opts.HTTPProxy,
-		upgradeProxy:       opts.UpgradeProxy,
-		authenticator:      opts.Authenticator,
-		identifier:         opts.Identifier,
+		httpProxy:    opts.HTTPProxy,
+		upgradeProxy: opts.UpgradeProxy,
+
+		agentAuthenticator:    opts.AgentAuthenticator,
+		externalAuthenticator: opts.ExternalAuthenticator,
+
 		allowedOriginHosts: opts.AllowedOriginHosts,
 	}
 }
@@ -327,22 +333,27 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Authenticate the request.
-	err := s.authenticator.Authenticate(r)
+	clusterID, path, err := s.externalAuthenticator.Authenticate(r)
 	if err != nil {
 		klog.Infof("Authentication failed: %s", err)
 		http.Error(w, "not authorized", http.StatusUnauthorized)
 		return
 	}
 
-	// Identify the request.
-	id, err := s.identifier.Identify(r)
-	if err != nil {
-		klog.Infof("Identification failed: %s", err)
-		http.Error(w, "could not identify request", http.StatusBadRequest)
-		return
-	}
+	r.URL.Path = path
 
-	r.Host = id
+	// TODO(kenji): Extract the cluster ID from the requset.
+	/*
+		// Identify the request.
+		id, err := s.identifier.Identify(r)
+		if err != nil {
+			klog.Infof("Identification failed: %s", err)
+			http.Error(w, "could not identify request", http.StatusBadRequest)
+			return
+		}
+	*/
+
+	r.Host = clusterID
 	klog.V(2).Infof("Updated host=%q", r.Host)
 
 	switch tType := inferTunnelType(r); {
@@ -360,27 +371,13 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request) {
 
 // doHandshakeWithAgent authenticates an incoming request from an agent. The
 // underlying connection to the agent is returned.
-func (s *Server) doHandshakeWithAgent(w http.ResponseWriter, r *http.Request) (conn net.Conn, id string) {
+func (s *Server) doHandshakeWithAgent(w http.ResponseWriter, r *http.Request) (conn net.Conn, clusterID string) {
 	klog.Infof("Handling handshake (host: %s)", r.Host)
 
-	// Authenticate the request.
-	// TODO(kenji): Remove the authenticator now assuming that the agent port is
-	// exposed only to the internal k8s cluster.
-	/*
-
-		err := s.authenticator.Authenticate(r)
-		if err != nil {
-			klog.Infof("Authentication failed: %s", err)
-			http.Error(w, "not authorized", http.StatusUnauthorized)
-			return
-		}
-	*/
-
-	// Identify the request.
-	id, err := s.identifier.Identify(r)
+	clusterID, _, err := s.agentAuthenticator.Authenticate(r)
 	if err != nil {
-		klog.Infof("Identification failed: %s", err)
-		http.Error(w, "could not identify request", http.StatusBadRequest)
+		klog.Infof("Authentication failed: %s", err)
+		http.Error(w, "not authorized", http.StatusUnauthorized)
 		return
 	}
 
@@ -409,7 +406,7 @@ func (s *Server) doHandshakeWithAgent(w http.ResponseWriter, r *http.Request) (c
 	w.Header().Add("Upgrade", proto)
 	w.WriteHeader(http.StatusSwitchingProtocols)
 
-	// Hijack and return the (connection, ID) pair.
+	// Hijack and return the (connection, clusteID) pair.
 
 	hijacker, ok := w.(http.Hijacker)
 	if !ok {
@@ -428,7 +425,7 @@ func (s *Server) doHandshakeWithAgent(w http.ResponseWriter, r *http.Request) (c
 		return
 	}
 
-	klog.Infof("Handshake successful (ID: %q)", id)
+	klog.Infof("Handshake successful (ID: %q)", clusterID)
 	return
 }
 

@@ -3,21 +3,9 @@ global:
     enable: true
     rbacInternalServerAddr:
 
-auth:
-  jwks:
-    enable: false
-    url:
-    certRefreshInterval:
-
-identifier:
-  static:
-    id: local-cluster
-
-baseUrl: /v1/sessions
-
 httpPort: 8080
 adminPort: 8081
-agentHttpPort: 8082
+workerServiceHttpPort: 8082
 
 tls:
   enable: false

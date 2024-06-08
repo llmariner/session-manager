@@ -27,6 +27,15 @@ spec:
         {{- if .Values.debugLogging | default false | eq true }}
         - -v=10
         {{- end }}
+        {{- with .Values.global.worker.registrationKeySecret }}
+        {{- if .name }}
+        - name: LLMO_CLUSTER_REGISTRATION_KEY
+          valueFrom:
+            secretKeyRef:
+              name: {{ .name }}
+              key: {{ .key }}
+        {{- end }}
+        {{- end }}
         volumeMounts:
         - name: config
           mountPath: /tmp/config
