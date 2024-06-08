@@ -29,17 +29,13 @@ type UpgradeProxy struct {
 
 	// numTakenTransports is the number of transports keyed by cluster ID.
 	numTakenTransports map[string]int
-
-	baseURL string
 }
 
 // NewUpgradeProxy returns a new ConnectProxy.
-func NewUpgradeProxy(baseURL string) *UpgradeProxy {
+func NewUpgradeProxy() *UpgradeProxy {
 	return &UpgradeProxy{
 		transports:         make(map[string][]*http.Transport),
 		numTakenTransports: make(map[string]int),
-
-		baseURL: baseURL,
 	}
 }
 
@@ -99,8 +95,6 @@ func (t *UpgradeProxy) Proxy(w http.ResponseWriter, r *http.Request) {
 	// the same TCP connection, which will result in an error when data is
 	// written to the connection.
 	r.URL.Host = hostPort
-
-	r.URL.Path = strings.TrimPrefix(r.URL.Path, t.baseURL)
 
 	// NOTE: Request.RequestURI can't be set in client requests.
 	// http://golang.org/src/pkg/net/http/client.go

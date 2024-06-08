@@ -4,12 +4,9 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"regexp"
 	"strings"
 
 	"github.com/llm-operator/rbac-manager/pkg/auth"
-	"github.com/llm-operator/session-manager/common/pkg/jwt"
-	"k8s.io/klog/v2"
 )
 
 // Common errors.
@@ -19,64 +16,24 @@ var (
 	ErrUnauthorized               = fmt.Errorf("auth: unauthorized")
 )
 
-var authRegex = regexp.MustCompile(`(?i)^bearer\s(.*)$`)
-
 // Authenticator authenticates an inbound http.Request.
 type Authenticator interface {
-	Authenticate(r *http.Request) error
-}
-
-// NoOpAuthenticator always authenticates a request.
-type NoOpAuthenticator struct{}
-
-// Authenticate implements Authenticator by always authenticating the request.
-func (a *NoOpAuthenticator) Authenticate(_ *http.Request) error {
-	return nil
-}
-
-// JWTAuthenticator authenticates requests by validating a JWT on the request.
-type JWTAuthenticator struct {
-	v jwt.Validator
-}
-
-// NewJWTAuthenticator returns a new JWTAuthenticator.
-func NewJWTAuthenticator(v jwt.Validator) *JWTAuthenticator {
-	return &JWTAuthenticator{v: v}
-}
-
-// Authenticate implements Authenticator by validating the JWT present on a
-// request in the Authorization header.
-func (a *JWTAuthenticator) Authenticate(r *http.Request) error {
-	klog.V(2).Infof("Authenticating request: %s", r.URL)
-
-	auth := r.Header.Get("Authorization")
-	if auth == "" {
-		return ErrMissingAuthHeader
-	}
-
-	matches := authRegex.FindStringSubmatch(auth)
-	if len(matches) != 2 {
-		return ErrInvalidAuthorizationHeader
-	}
-
-	_, err := a.v.Validate(matches[1])
-	if err != nil {
-		return ErrUnauthorized
-	}
-	return nil
+	// Authenticate authenticates the request. If the request is authenticated, it
+	// returns a cluster ID and a path.
+	Authenticate(r *http.Request) (string, string, error)
 }
 
 type reqIntercepter interface {
 	InterceptHTTPRequest(req *http.Request) (int, auth.UserInfo, error)
 }
 
-// RBACServerAuthenticator authenticates requests with RBAC server.
-type RBACServerAuthenticator struct {
+// ExternalAuthenticator authenticates external requests with RBAC server.
+type ExternalAuthenticator struct {
 	intercepter reqIntercepter
 }
 
-// NewRBACServerAuthenticator returns a new RBACServerAuthenticator.q
-func NewRBACServerAuthenticator(ctx context.Context, addr string) (*RBACServerAuthenticator, error) {
+// NewExternalAuthenticator returns a new ExternalAuthenticator.q
+func NewExternalAuthenticator(ctx context.Context, addr string) (*ExternalAuthenticator, error) {
 	i, err := auth.NewInterceptor(ctx, auth.Config{
 		RBACServerAddr: addr,
 		// TODO(kenji): Revisit.
@@ -85,21 +42,21 @@ func NewRBACServerAuthenticator(ctx context.Context, addr string) (*RBACServerAu
 	if err != nil {
 		return nil, err
 	}
-	return &RBACServerAuthenticator{
+	return &ExternalAuthenticator{
 		intercepter: i,
 	}, nil
 }
 
 // Authenticate implements Authenticator by authenticating the request with the
-func (a *RBACServerAuthenticator) Authenticate(r *http.Request) error {
+func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, error) {
 	_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
 	if err != nil {
-		return ErrUnauthorized
+		return "", "", ErrUnauthorized
 	}
 
 	route, ok := extractRoute(r.URL.Path)
 	if !ok {
-		return ErrUnauthorized
+		return "", "", ErrUnauthorized
 	}
 
 	var found bool
@@ -111,10 +68,42 @@ func (a *RBACServerAuthenticator) Authenticate(r *http.Request) error {
 	}
 
 	if !found {
-		return ErrUnauthorized
+		return "", "", ErrUnauthorized
 	}
 
-	return nil
+	return route.clusterID, route.path, nil
+}
+
+type reqWorkerIntercepter interface {
+	InterceptHTTPRequest(req *http.Request) (int, auth.ClusterInfo, error)
+}
+
+// WorkerAuthenticator authenticates external requests with RBAC server.
+type WorkerAuthenticator struct {
+	intercepter reqWorkerIntercepter
+}
+
+// NewWorkerAuthenticator returns a new WorkerAuthenticator.q
+func NewWorkerAuthenticator(ctx context.Context, addr string) (*WorkerAuthenticator, error) {
+	i, err := auth.NewWorkerInterceptor(ctx, auth.WorkerConfig{
+		RBACServerAddr: addr,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &WorkerAuthenticator{
+		intercepter: i,
+	}, nil
+}
+
+// Authenticate implements Authenticator by authenticating the request with the
+func (a *WorkerAuthenticator) Authenticate(r *http.Request) (string, string, error) {
+	_, clusterInfo, err := a.intercepter.InterceptHTTPRequest(r)
+	if err != nil {
+		return "", "", ErrUnauthorized
+	}
+
+	return clusterInfo.ClusterID, r.URL.Path, nil
 }
 
 type route struct {
@@ -138,27 +127,4 @@ func extractRoute(origPath string) (route, bool) {
 		namespace: s[7],
 		path:      "/" + strings.Join(s[4:], "/"),
 	}, true
-}
-
-// CompositeAuthenticator is an Authenticator that wraps a number of inner
-// authenticators that processes the incoming request sequentially.
-type CompositeAuthenticator struct {
-	as []Authenticator
-}
-
-// NewCompositeAuthenticator returns a new CompositeAuthenticator.
-func NewCompositeAuthenticator(as ...Authenticator) *CompositeAuthenticator {
-	return &CompositeAuthenticator{as: as}
-}
-
-// Authenticate implements Authenticator by iterating through each of the
-// inner authenticators, in sequence, returning the first error encountered, or
-// nil if no authentication error was encountered.
-func (a *CompositeAuthenticator) Authenticate(r *http.Request) error {
-	for i, a := range a.as {
-		if err := a.Authenticate(r); err != nil {
-			return fmt.Errorf("composite auth (authenticator: %d): %w", i, err)
-		}
-	}
-	return nil
 }

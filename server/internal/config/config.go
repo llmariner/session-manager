@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"os"
-	"time"
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
@@ -20,12 +19,7 @@ type Server struct {
 	Port      int `yaml:"port"`
 	AgentPort int `yaml:"agentPort"`
 
-	Auth       Auth       `yaml:"auth"`
-	Identifier Identifier `yaml:"identifier"`
-
-	// BaseURL is the base URL of the server. When receiving a request, the server
-	// will strip the BaseURL from the request URL before forwarding it to the agent.
-	BaseURL string `yaml:"baseUrl"`
+	Auth Auth `yaml:"auth"`
 
 	TLS *TLS `yaml:"tls"`
 	// AllowedOriginHosts is a slice of Origin hosts that we allow in CORS preflight check.
@@ -48,44 +42,12 @@ type Admin struct {
 
 // Auth is the authentication configuration for the proxy.
 type Auth struct {
-	Static     *StaticAuth     `yaml:"static,omitempty"`
-	JWKS       *JWKSAuth       `yaml:"jwks,omitempty"`
 	RBACServer *RBACServerAuth `yaml:"rbacServer"`
-}
-
-// StaticAuth is the configuration for a server.JWTAuthenticator using a
-// file-based public key.
-type StaticAuth struct {
-	Path string `yaml:"path"`
-}
-
-// JWKSAuth is the configuration for a server.JWTAuthenticator using a
-// JWKS-based public key.
-type JWKSAuth struct {
-	URL     string        `yaml:"url"`
-	Refresh time.Duration `yaml:"refreshInterval"`
 }
 
 // RBACServerAuth is the configuration for authentication with RBAC server.
 type RBACServerAuth struct {
 	Addr string `yaml:"addr"`
-}
-
-// Identifier is the configuration for the proxy's identifier.
-type Identifier struct {
-	Static    *StaticIdentifier    `yaml:"static,omitempty"`
-	HostBased *HostBasedIdentifier `yaml:"hostBased,omitempty"`
-}
-
-// StaticIdentifier is the configuration for a static identifier.
-type StaticIdentifier struct {
-	ID string `yaml:"id"`
-}
-
-// HostBasedIdentifier is the configuration for a host-based identifier.
-type HostBasedIdentifier struct {
-	// Port is the port that the identifier append when it is missing.
-	Port int `yaml:"port"`
 }
 
 // TLS is the TLS configuration for the proxy.

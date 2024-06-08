@@ -5,7 +5,7 @@ go 1.22.2
 require (
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/lestrrat-go/jwx v1.2.29
-	github.com/llm-operator/rbac-manager v0.73.0
+	github.com/llm-operator/rbac-manager v0.74.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
 	github.com/stretchr/testify v1.9.0

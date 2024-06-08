@@ -34,7 +34,6 @@ var rootCmd = &cobra.Command{
 }
 
 func run(ctx context.Context, c *config.Config) error {
-	// Token generator.
 	errC := make(chan error)
 
 	// HTTP tunnel.

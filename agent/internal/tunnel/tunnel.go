@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/llm-operator/rbac-manager/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
 	"k8s.io/klog/v2"
 )
@@ -185,10 +186,7 @@ func (t *Tunnel) dialConnectProxy() (io.ReadWriteCloser, error) {
 		return nil, fmt.Errorf("create CONNECT request: %s", err)
 	}
 
-	// TODO(kenji): This is no-op for now. We need to implement
-	// when session-manager-server and session-manager-agent
-	// runs in a different k8s cluster.
-	//req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", token))
+	auth.AppendWorkerAuthorizationToHeader(req)
 
 	req.Header.Add(common.HeaderProto, common.ProtoV1)
 

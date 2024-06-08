@@ -19,7 +19,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "session-manager-server.fullname" . }}-agent-http
+  name: {{ include "session-manager-server.fullname" . }}-worker-service-http
   labels:
     {{- include "session-manager-server.labels" . | nindent 4 }}
 spec:
@@ -27,7 +27,7 @@ spec:
   ports:
   - name: http
     protocol: TCP
-    port: {{ .Values.agentHttpPort }}
-    targetPort: agent-http
+    port: {{ .Values.workerServiceHttpPort }}
+    targetPort: ws-http
   selector:
     {{- include "session-manager-server.selectorLabels" . | nindent 4 }}

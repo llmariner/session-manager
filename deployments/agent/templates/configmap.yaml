@@ -7,7 +7,6 @@ metadata:
 data:
 
   config.yaml: |
-    id: {{ .Values.clusterId }}
     admin:
       socket: /tmp/sockets/admin.sock
     proxy:
@@ -25,8 +24,8 @@ data:
 
   envoy.yaml: |
     node:
-      id: {{ .Values.clusterId }}
-      cluster: {{ .Values.clusterId }}
+      id: {{ .Values.envoyClusterId }}
+      cluster: {{ .Values.envoyClusterId }}
 
     admin:
       access_log_path: /dev/stdout
