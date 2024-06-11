@@ -3,6 +3,13 @@ global:
     enable: true
     rbacInternalServerAddr:
 
+  ingress:
+    ingressClassName:
+    annotations:
+    tls:
+      hosts:
+      secretName:
+
 httpPort: 8080
 adminPort: 8081
 workerServiceHttpPort: 8082
