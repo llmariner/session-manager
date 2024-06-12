@@ -118,21 +118,21 @@ func extractRoute(origPath string) (route, bool) {
 	}
 
 	s := strings.Split(origPath, "/")
-	if len(s) < 7 {
-		return route{}, false
-	}
-	var namespace string
+	var nsIdx int
 	switch s[4] {
 	case "api":
-		namespace = s[7]
+		nsIdx = 7
 	case "apis":
-		namespace = s[8]
+		nsIdx = 8
 	default:
+		return route{}, false
+	}
+	if len(s) < nsIdx {
 		return route{}, false
 	}
 	return route{
 		clusterID: s[3],
-		namespace: namespace,
+		namespace: s[nsIdx],
 		path:      "/" + strings.Join(s[4:], "/"),
 	}, true
 }
