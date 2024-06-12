@@ -21,3 +21,16 @@ rules:
   verbs:
   - create
   - get
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - patch
+- apiGroups:
+  - "batch"
+  resources:
+  - jobs
+  verbs:
+  - patch
