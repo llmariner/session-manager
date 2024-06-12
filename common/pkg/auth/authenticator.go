@@ -113,18 +113,29 @@ type route struct {
 }
 
 func extractRoute(origPath string) (route, bool) {
+	if !strings.HasPrefix(origPath, "/v1/sessions/") {
+		return route{}, false
+	}
+
 	s := strings.Split(origPath, "/")
 	if len(s) < 7 {
 		return route{}, false
 	}
-
-	if !(s[0] == "" && s[1] == "v1" && s[2] == "sessions") {
+	var namespace string
+	switch s[4] {
+	case "api":
+		namespace = s[7]
+	case "apis":
+		if len(s) < 8 {
+			return route{}, false
+		}
+		namespace = s[8]
+	default:
 		return route{}, false
 	}
-
 	return route{
 		clusterID: s[3],
-		namespace: s[7],
+		namespace: namespace,
 		path:      "/" + strings.Join(s[4:], "/"),
 	}, true
 }
