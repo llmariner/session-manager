@@ -3,6 +3,8 @@ global:
     registrationKeySecret:
       name:
       key:
+    tls:
+      enable: false
 
 # The ID of this cluster.
 envoyClusterId: local-cluster-id

@@ -18,6 +18,8 @@ data:
         url: https://{{ .Values.proxy.address }}/_/agent/connect
         poolSize: {{ $.Values.proxy.connect.poolSize }}
         dialTimeout: 5s
+      tls:
+        enable: {{ .Values.global.worker.tls.enable }}
     envoy:
       socket: /tmp/sockets/envoy.sock
     httpPort: {{ .Values.httpPort }}

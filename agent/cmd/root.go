@@ -47,6 +47,8 @@ func run(ctx context.Context, c *config.Config) error {
 
 		URL: urlHTTP,
 
+		TLSEnabled: c.Proxy.TLS.Enable,
+
 		EnvoySocket: c.Envoy.Socket,
 	})
 	if err != nil {
@@ -63,6 +65,8 @@ func run(ctx context.Context, c *config.Config) error {
 		DialTimeout: c.Proxy.Connect.DialTimeout,
 
 		URL: urlUpgrade,
+
+		TLSEnabled: c.Proxy.TLS.Enable,
 
 		EnvoySocket: c.Envoy.Socket,
 	})
