@@ -28,6 +28,8 @@ type Admin struct {
 type Proxy struct {
 	HTTP    Tunnel `yaml:"http"`
 	Connect Tunnel `yaml:"connect"`
+
+	TLS TLS `yaml:"tls"`
 }
 
 // Tunnel is the configuration for a tunnel.
@@ -35,6 +37,11 @@ type Tunnel struct {
 	URL         string        `yaml:"url"`
 	PoolSize    int           `yaml:"poolSize"`
 	DialTimeout time.Duration `yaml:"dialTimeout"`
+}
+
+// TLS is the configuration for TLS.
+type TLS struct {
+	Enable bool `yaml:"enable"`
 }
 
 // Envoy is the configuration for connecting to Envoy.

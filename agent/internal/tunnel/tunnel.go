@@ -2,6 +2,7 @@ package tunnel
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"net"
@@ -25,6 +26,8 @@ type Opts struct {
 	URL *url.URL
 
 	EnvoySocket string
+
+	TLSEnabled bool
 }
 
 // Tunnel establishes a TCP connection between the proxy (running remotely) and
@@ -37,6 +40,8 @@ type Tunnel struct {
 
 	envoySocket string
 
+	tlsEnabled bool
+
 	m           sync.RWMutex
 	poolSizeCur int
 }
@@ -48,6 +53,8 @@ func NewTunnel(opts Opts) (*Tunnel, error) {
 		dialTimeout:     opts.DialTimeout,
 
 		url: opts.URL,
+
+		tlsEnabled: opts.TLSEnabled,
 
 		envoySocket: opts.EnvoySocket,
 	}, nil
@@ -158,10 +165,15 @@ func (t *Tunnel) dialConnectProxy() (io.ReadWriteCloser, error) {
 
 		klog.Infof("Dialing session-manager-server (%q).", t.url.Host)
 
-		// TODO(kenji): Switch to TLS with configuration.
-		d := net.Dialer{Timeout: t.dialTimeout}
-		//conn, err = tls.Dial("tcp", t.url.Host, &tls.Config{})
-		conn, err := d.Dial("tcp", t.url.Host)
+		var conn net.Conn
+		var err error
+		if t.tlsEnabled {
+			conn, err = tls.Dial("tcp", t.url.Host, &tls.Config{})
+		} else {
+			d := net.Dialer{Timeout: t.dialTimeout}
+			conn, err = d.Dial("tcp", t.url.Host)
+		}
+
 		if err == nil {
 			tcpConn = conn
 			break
