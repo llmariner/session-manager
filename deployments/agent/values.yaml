@@ -10,8 +10,7 @@ global:
 envoyClusterId: local-cluster-id
 
 proxy:
-  # Address of the proxy, in host:port format.
-  address: session-manager-server-worker-service-http:8082
+  baseUrl: http://session-manager-server-worker-service-http:8082
   http:
     # pool size of the HTTP tunnel
     poolSize: 3
