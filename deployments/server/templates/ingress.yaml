@@ -26,3 +26,38 @@ spec:
             name: {{ include "session-manager-server.fullname" . }}-http
             port:
               number: {{ .Values.httpPort }}
+
+---
+
+{{- if .Values.global.workerServiceIngress.create -}}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "session-manager-server.fullname" . }}-worker-service-grpc
+  labels:
+    {{- include "session-manager-server.labels" . | nindent 4 }}
+  annotations:
+    # Do not use global.workerServiceIngress.annotations since it is used for
+    # gRPC for other services.
+    {{- toYaml .Values.global.ingress.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.global.workerServiceIngress.ingressClassName }}
+  {{- with .Values.global.workerServiceIngress.tls }}
+  tls:
+  - hosts:
+      {{- toYaml .hosts | nindent 6 }}
+    {{- if .secretName }}
+    secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+  - http:
+      paths:
+      - path: /v1/sessions-worker-service
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ include "session-manager-server.fullname" . }}-worker-service-http
+            port:
+              number: {{ .Values.httpPort }}
+{{- end -}}
