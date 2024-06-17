@@ -11,11 +11,11 @@ data:
       socket: /tmp/sockets/admin.sock
     proxy:
       http:
-        url: {{ .Values.proxy.baseUrl }}/_/agent/http
+        url: {{ .Values.proxy.baseUrl }}/v1/session-worker-service/http
         poolSize: {{ $.Values.proxy.http.poolSize }}
         dialTimeout: 5s
       connect:
-        url: {{ .Values.proxy.baseUrl }}/_/agent/connect
+        url: {{ .Values.proxy.baseUrl }}/v1/session-worker-service/connect
         poolSize: {{ $.Values.proxy.connect.poolSize }}
         dialTimeout: 5s
       tls:
