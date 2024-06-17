@@ -10,6 +10,13 @@ global:
       hosts:
       secretName:
 
+  workerServiceIngress:
+    create: false
+    ingressClassName:
+    tls:
+      hosts:
+      secretName:
+
 httpPort: 8080
 adminPort: 8081
 workerServiceHttpPort: 8082
