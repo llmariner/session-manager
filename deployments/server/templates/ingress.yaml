@@ -33,7 +33,7 @@ spec:
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "session-manager-server.fullname" . }}-worker-service-grpc
+  name: {{ include "session-manager-server.fullname" . }}-worker-service
   labels:
     {{- include "session-manager-server.labels" . | nindent 4 }}
   annotations:
