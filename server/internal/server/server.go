@@ -341,18 +341,6 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	r.URL.Path = path
-
-	// TODO(kenji): Extract the cluster ID from the requset.
-	/*
-		// Identify the request.
-		id, err := s.identifier.Identify(r)
-		if err != nil {
-			klog.Infof("Identification failed: %s", err)
-			http.Error(w, "could not identify request", http.StatusBadRequest)
-			return
-		}
-	*/
-
 	r.Host = clusterID
 	klog.V(2).Infof("Updated host=%q", r.Host)
 
