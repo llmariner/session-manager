@@ -119,7 +119,7 @@ func RunHTTPServer(
 		// Create a single server that listens on the same port.
 		m := http.NewServeMux()
 		m.Handle(common.PathAgentHTTP, http.HandlerFunc(opts.Server.handleAgentHTTP))
-		m.Handle(common.PathAgentConnect, http.HandlerFunc(opts.Server.handleAgentConnect))
+		m.Handle(common.PathAgentUpgrade, http.HandlerFunc(opts.Server.handleAgentUpgrade))
 		m.Handle("/" /* fallthrough route */, http.HandlerFunc(opts.Server.handleProxy))
 		return listenAndServe(m, tlsConfig, opts.Port)
 	}
@@ -130,7 +130,7 @@ func RunHTTPServer(
 	go func() {
 		m := http.NewServeMux()
 		m.Handle(common.PathAgentHTTP, http.HandlerFunc(opts.Server.handleAgentHTTP))
-		m.Handle(common.PathAgentConnect, http.HandlerFunc(opts.Server.handleAgentConnect))
+		m.Handle(common.PathAgentUpgrade, http.HandlerFunc(opts.Server.handleAgentUpgrade))
 
 		errCh <- listenAndServe(m, tlsConfig, opts.AgentPort)
 	}()
@@ -191,10 +191,10 @@ func (s *Server) handleAgentHTTP(w http.ResponseWriter, r *http.Request) {
 	klog.Infof("Established HTTP tunnel (ID: %q)", id)
 }
 
-// handleAgentConnect is a http.HandlerFunc used to add new connections for HTTP
-// CONNECT proxying.
-func (s *Server) handleAgentConnect(w http.ResponseWriter, r *http.Request) {
-	klog.Infof("Handling agent CONNECT tunnel request.")
+// handleAgentUpgrade is a http.HandlerFunc used to add new connections for HTTP
+// Upgrade proxying.
+func (s *Server) handleAgentUpgrade(w http.ResponseWriter, r *http.Request) {
+	klog.Infof("Handling agent Upgrade tunnel request.")
 
 	conn, id := s.doHandshakeWithAgent(w, r)
 	if conn == nil {
@@ -209,7 +209,7 @@ func (s *Server) handleAgentConnect(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	klog.Infof("Established CONNECT tunnel (ID: %q)", id)
+	klog.Infof("Established Upgrade tunnel (ID: %q)", id)
 }
 
 func (s *Server) handlePreflight(w http.ResponseWriter, r *http.Request) int {

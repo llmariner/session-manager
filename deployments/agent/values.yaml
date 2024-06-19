@@ -14,7 +14,7 @@ proxy:
   http:
     # pool size of the HTTP tunnel
     poolSize: 3
-  connect:
+  upgrade:
     # pool size of the HTTP upgrade tunnel
     poolSize: 10
 

@@ -159,7 +159,7 @@ func TestServer_handleAgentConnect(t *testing.T) {
 	req := &http.Request{
 		Header: header(common.HeaderProto, common.ProtoV1),
 	}
-	s.handleAgentConnect(w, req)
+	s.handleAgentUpgrade(w, req)
 
 	assert.Equal(t, http.StatusSwitchingProtocols, w.Result().StatusCode)
 	assert.Equal(t, id, p.id)
