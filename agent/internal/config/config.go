@@ -27,7 +27,7 @@ type Admin struct {
 // Proxy is the configuration for connecting to the proxy.
 type Proxy struct {
 	HTTP    Tunnel `yaml:"http"`
-	Connect Tunnel `yaml:"connect"`
+	Upgrade Tunnel `yaml:"upgrade"`
 
 	TLS TLS `yaml:"tls"`
 }

@@ -3,7 +3,7 @@ package common
 // Proxy endpoints.
 const (
 	PathAgentHTTP    = "/v1/sessions-worker-service/http"
-	PathAgentConnect = "/v1/sessions-worker-service/connect"
+	PathAgentUpgrade = "/v1/sessions-worker-service/upgrade"
 	PathServerReady  = "/_/ready"
 	PathServerStatus = "/_/status"
 )

@@ -14,9 +14,9 @@ data:
         url: {{ .Values.proxy.baseUrl }}/v1/sessions-worker-service/http
         poolSize: {{ $.Values.proxy.http.poolSize }}
         dialTimeout: 5s
-      connect:
-        url: {{ .Values.proxy.baseUrl }}/v1/sessions-worker-service/connect
-        poolSize: {{ $.Values.proxy.connect.poolSize }}
+      upgrade:
+        url: {{ .Values.proxy.baseUrl }}/v1/sessions-worker-service/upgrade
+        poolSize: {{ $.Values.proxy.upgrade.poolSize }}
         dialTimeout: 5s
       tls:
         enable: {{ .Values.global.worker.tls.enable }}

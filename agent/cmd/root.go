@@ -56,13 +56,13 @@ func run(ctx context.Context, c *config.Config) error {
 	}
 
 	// HTTP upgrade tunnel.
-	urlUpgrade, err := url.Parse(c.Proxy.Connect.URL)
+	urlUpgrade, err := url.Parse(c.Proxy.Upgrade.URL)
 	if err != nil {
 		return err
 	}
 	tunnelUpgrade, err := tunnel.NewTunnel(tunnel.Opts{
-		PoolSize:    c.Proxy.Connect.PoolSize,
-		DialTimeout: c.Proxy.Connect.DialTimeout,
+		PoolSize:    c.Proxy.Upgrade.PoolSize,
+		DialTimeout: c.Proxy.Upgrade.DialTimeout,
 
 		URL: urlUpgrade,
 
