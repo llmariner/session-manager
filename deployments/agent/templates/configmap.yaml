@@ -74,11 +74,17 @@ data:
                     route:
                       cluster: agent
                   - match:
-                      prefix: "/"
+                      prefix: "/api"
                     route:
                       cluster: apiserver
                       idle_timeout: 0s
                       # Explicitly disable timeout as we have a long-running request like 'kubectl logs -f'.
+                      timeout: 0s
+                  - match:
+                      prefix: "/v1/sessions"
+                    route:
+                      cluster: ingress
+                      idle_timeout: 0s
                       timeout: 0s
               http_filters:
               - name: envoy.filters.http.lua
@@ -144,3 +150,19 @@ data:
                 validation_context:
                   trusted_ca:
                     filename: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+
+      - name: ingress
+        connect_timeout: 0.25s
+        upstream_connection_options:
+          tcp_keepalive:
+            keepalive_time: 60
+        type: STRICT_DNS
+        load_assignment:
+          cluster_name: ingress
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address:  {{ .Values.ingressControllerAddress }}
+                    port_value: {{ .Values.ingressControllerPort }}

@@ -18,6 +18,9 @@ proxy:
     # pool size of the HTTP upgrade tunnel
     poolSize: 10
 
+ingressControllerAddress:
+ingressControllerPort:
+
 httpPort: 8080
 
 # Enable debug logging (true or false).

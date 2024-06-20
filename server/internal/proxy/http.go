@@ -32,6 +32,11 @@ func NewHTTPProxy() *HTTPProxy {
 		pool: newH2ConnPool(t),
 		client: &http.Client{
 			Transport: t,
+			// Do not follow redirects (https://stackoverflow.com/questions/23297520/how-can-i-make-the-go-http-client-not-follow-redirects-automatically).
+			// We should just pass the redirect back to the client.
+			CheckRedirect: func(req *http.Request, via []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
 		},
 	}
 }
@@ -73,6 +78,7 @@ func (t *HTTPProxy) Proxy(w http.ResponseWriter, r *http.Request) {
 		if strings.ToLower(k) == allowOriginHeaderName {
 			continue
 		}
+
 		for _, vv := range v {
 			w.Header().Add(k, vv)
 		}

@@ -49,13 +49,18 @@ func NewExternalAuthenticator(ctx context.Context, addr string) (*ExternalAuthen
 
 // Authenticate implements Authenticator by authenticating the request with the
 func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, error) {
-	_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
-	if err != nil {
+	route, ok := extractRoute(r.URL.Path)
+	if !ok {
 		return "", "", ErrUnauthorized
 	}
 
-	route, ok := extractRoute(r.URL.Path)
-	if !ok {
+	if route.isIngress {
+		// TODO(kenji): Implement the authorization.
+		return route.clusterID, route.path, nil
+	}
+
+	_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
+	if err != nil {
 		return "", "", ErrUnauthorized
 	}
 
@@ -108,8 +113,10 @@ func (a *WorkerAuthenticator) Authenticate(r *http.Request) (string, string, err
 
 type route struct {
 	clusterID string
-	namespace string
 	path      string
+
+	isIngress bool
+	namespace string
 }
 
 func extractRoute(origPath string) (route, bool) {
@@ -121,6 +128,19 @@ func extractRoute(origPath string) (route, bool) {
 	if len(s) < 7 {
 		return route{}, false
 	}
+	clusterID := s[3]
+
+	if s[4] == "v1" && s[5] == "services" {
+		return route{
+			clusterID: clusterID,
+			isIngress: true,
+			// It is natural to truncuate "/v1/sessions/<cluster ID>" when
+			// forwarding the request, but we're not doing that here since
+			// it does not work well with Jupyter Notebook.
+			path: origPath,
+		}, true
+	}
+
 	var namespace string
 	switch s[4] {
 	case "api":
@@ -134,7 +154,7 @@ func extractRoute(origPath string) (route, bool) {
 		return route{}, false
 	}
 	return route{
-		clusterID: s[3],
+		clusterID: clusterID,
 		namespace: namespace,
 		path:      "/" + strings.Join(s[4:], "/"),
 	}, true
