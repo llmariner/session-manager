@@ -134,7 +134,7 @@ func extractRoute(origPath string) (route, bool) {
 		return route{
 			clusterID: clusterID,
 			isIngress: true,
-			// It is natural to truncuate "/v1/sessions/<cluster ID>" when
+			// It is natural to truncate "/v1/sessions/<cluster ID>" when
 			// forwarding the request, but we're not doing that here since
 			// it does not work well with Jupyter Notebook.
 			path: origPath,
