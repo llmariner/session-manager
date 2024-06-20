@@ -75,15 +75,15 @@ func (p *h2ConnPool) GetClientConn(r *http.Request, _ string) (*http2.ClientConn
 	defer p.m.RUnlock()
 
 	id := r.Host
-	klog.Infof("fetching HTTP connection; ID=%q", id)
+	klog.Infof("fetching HTTP connection; ID=%q, URL=%s", id, r.URL)
 
 	c, ok := p.conns[id]
 	if !ok {
-		return nil, fmt.Errorf("tunnel: get client conn: client not found")
+		return nil, fmt.Errorf("tunnel: get client conn: client not found (ID=%q)", id)
 	}
 
 	if !c.CanTakeNewRequest() {
-		return nil, fmt.Errorf("tunnel: get client conn: client not connected")
+		return nil, fmt.Errorf("tunnel: get client conn: client not connected (ID=%q)", id)
 	}
 
 	return c, nil

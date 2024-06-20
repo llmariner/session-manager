@@ -123,6 +123,24 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			wantClusterID: "my-cluster",
 			wantPath:      "/apis/batch/v1/namespaces/my-namespace/jobs/",
 		},
+		{
+			name: "ingress path",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+				},
+			},
+			userInfo: auth.UserInfo{
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
+			},
+			wantClusterID: "my-cluster",
+			wantPath:      "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+		},
 	}
 
 	for _, tc := range tcs {
