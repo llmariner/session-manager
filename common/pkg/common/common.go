@@ -16,3 +16,6 @@ const (
 	HeaderProto = "x-llmo-tunnel-proto"
 	ProtoV1     = "llmo-session-manager-server/1.0"
 )
+
+// PathLoginCallback is the path for the login callback.
+const PathLoginCallback = "/v1/sessions/callback"

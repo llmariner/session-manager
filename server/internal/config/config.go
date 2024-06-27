@@ -10,8 +10,9 @@ import (
 
 // Config is the configuration for the proxy.
 type Config struct {
-	Server Server `yaml:"server"`
-	Admin  Admin  `yaml:"admin"`
+	BaseURL string `yaml:"baseUrl"`
+	Server  Server `yaml:"server"`
+	Admin   Admin  `yaml:"admin"`
 }
 
 // Server is the configuration for the external HTTPS server.
@@ -43,11 +44,20 @@ type Admin struct {
 // Auth is the authentication configuration for the proxy.
 type Auth struct {
 	RBACServer *RBACServerAuth `yaml:"rbacServer"`
+	OIDC       OIDC            `yaml:"oidc"`
 }
 
 // RBACServerAuth is the configuration for authentication with RBAC server.
 type RBACServerAuth struct {
 	Addr string `yaml:"addr"`
+}
+
+// OIDC is the configuration for OIDC.
+type OIDC struct {
+	ClientID     string `yaml:"clientId"`
+	ClientSecret string `yaml:"clientSecret"`
+	IssuerURL    string `yaml:"issuerUrl"`
+	ResolverAddr string `yaml:"resolverAddr"`
 }
 
 // TLS is the TLS configuration for the proxy.

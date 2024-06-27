@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -34,6 +35,9 @@ type Server struct {
 	agentAuthenticator    auth.Authenticator
 	externalAuthenticator auth.Authenticator
 
+	loginFunc         http.HandlerFunc
+	loginCallBackFunc http.HandlerFunc
+
 	allowedOriginHosts map[string]struct{}
 }
 
@@ -44,6 +48,9 @@ type Opts struct {
 
 	AgentAuthenticator    auth.Authenticator
 	ExternalAuthenticator auth.Authenticator
+
+	LoginFunc         http.HandlerFunc
+	LoginCallBackFunc http.HandlerFunc
 
 	AllowedOriginHosts map[string]struct{}
 }
@@ -56,6 +63,9 @@ func NewServer(opts Opts) *Server {
 
 		agentAuthenticator:    opts.AgentAuthenticator,
 		externalAuthenticator: opts.ExternalAuthenticator,
+
+		loginFunc:         opts.LoginFunc,
+		loginCallBackFunc: opts.LoginCallBackFunc,
 
 		allowedOriginHosts: opts.AllowedOriginHosts,
 	}
@@ -137,6 +147,7 @@ func RunHTTPServer(
 
 	go func() {
 		m := http.NewServeMux()
+		m.Handle(common.PathLoginCallback, opts.Server.loginCallBackFunc)
 		m.Handle("/", http.HandlerFunc(opts.Server.handleProxy))
 		errCh <- listenAndServe(m, tlsConfig, opts.Port)
 	}()
@@ -335,6 +346,9 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request) {
 	// Authenticate the request.
 	clusterID, path, err := s.externalAuthenticator.Authenticate(r)
 	if err != nil {
+		if errors.Is(err, auth.ErrLoginRequired) {
+			s.loginFunc(w, r)
+		}
 		klog.Infof("Authentication failed: %s", err)
 		http.Error(w, "not authorized", http.StatusUnauthorized)
 		return
@@ -344,15 +358,15 @@ func (s *Server) handleProxy(w http.ResponseWriter, r *http.Request) {
 	r.Host = clusterID
 	klog.V(2).Infof("Updated host=%q", r.Host)
 
-	switch tType := inferTunnelType(r); {
-	case tType == tunnelTypeHTTP:
+	switch inferTunnelType(r) {
+	case tunnelTypeHTTP:
 		klog.Infof("Proxying HTTP request to cluster %s", r.Host)
 		s.httpProxy.Proxy(w, r)
-	case tType == tunnelTypeUpgrade:
+	case tunnelTypeUpgrade:
 		klog.Infof("Proxying HTTP upgrade request to cluster %s", r.Host)
 		s.upgradeProxy.Proxy(w, r)
 	default:
-		klog.Infof("Unknown connection type: %q", tType)
+		klog.Infof("Unknown connection type: %q", inferTunnelType(r))
 		http.Error(w, "unknown connection type", http.StatusBadRequest)
 	}
 }

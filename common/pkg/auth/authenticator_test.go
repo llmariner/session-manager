@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
@@ -124,10 +125,30 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			wantPath:      "/apis/batch/v1/namespaces/my-namespace/jobs/",
 		},
 		{
+			name: "ingress path without token",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+				},
+			},
+			userInfo: auth.UserInfo{
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
+			},
+			wantErr: ErrLoginRequired,
+		},
+		{
 			name: "ingress path",
 			req: &http.Request{
 				URL: &url.URL{
 					Path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+				},
+				Header: http.Header{
+					"Cookie": []string{fmt.Sprintf("%s=%s", cookieNameToken, "token")},
 				},
 			},
 			userInfo: auth.UserInfo{
@@ -148,7 +169,7 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			i := &fakeRequsetIntercepter{
 				userInfo: tc.userInfo,
 			}
-			a := ExternalAuthenticator{i}
+			a := ExternalAuthenticator{intercepter: i}
 			gotClusterID, gotPth, err := a.Authenticate(tc.req)
 			if err != nil {
 				assert.ErrorIs(t, tc.wantErr, err)

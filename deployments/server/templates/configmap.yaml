@@ -6,6 +6,7 @@ metadata:
     {{- include "session-manager-server.labels" . | nindent 4 }}
 data:
   config.yaml: |
+    baseUrl: {{ .Values.global.llmOperatorBaseUrl }}
     admin:
       port: {{ .Values.adminPort }}
     server:
@@ -20,6 +21,11 @@ data:
         {{- if .Values.global.auth.enable }}
         rbacServer:
           addr: {{ .Values.global.auth.rbacInternalServerAddr }}
+        oidc:
+          issuerUrl: {{ .Values.global.auth.oidcIssuerUrl }}
+          clientId: {{ .Values.auth.oidcClientId }}
+          clientSecret: {{ .Values.auth.oidcClientSecret }}
+          resolverAddr: {{ .Values.auth.resolverAddr }}
         {{- end }}
       allowedOriginHosts:
       {{- toYaml .Values.allowedOriginHosts | nindent 6 }}

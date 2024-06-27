@@ -2,11 +2,19 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
 
 	"github.com/llm-operator/rbac-manager/pkg/auth"
+	"github.com/llm-operator/session-manager/common/pkg/common"
+	"k8s.io/klog/v2"
+)
+
+const (
+	cookieNameRedirect = "LLMOperatorRedirect"
+	cookieNameToken    = "LLMOperatorToken"
 )
 
 // Common errors.
@@ -14,6 +22,7 @@ var (
 	ErrMissingAuthHeader          = fmt.Errorf("auth: missing Authorization header")
 	ErrInvalidAuthorizationHeader = fmt.Errorf("auth: invalid Authorization header format")
 	ErrUnauthorized               = fmt.Errorf("auth: unauthorized")
+	ErrLoginRequired              = fmt.Errorf("auth: login required")
 )
 
 // Authenticator authenticates an inbound http.Request.
@@ -29,11 +38,12 @@ type reqIntercepter interface {
 
 // ExternalAuthenticator authenticates external requests with RBAC server.
 type ExternalAuthenticator struct {
-	intercepter reqIntercepter
+	intercepter    reqIntercepter
+	tokenExchanger *TokenExchanger
 }
 
-// NewExternalAuthenticator returns a new ExternalAuthenticator.q
-func NewExternalAuthenticator(ctx context.Context, addr string) (*ExternalAuthenticator, error) {
+// NewExternalAuthenticator returns a new ExternalAuthenticator.
+func NewExternalAuthenticator(ctx context.Context, addr string, tex *TokenExchanger) (*ExternalAuthenticator, error) {
 	i, err := auth.NewInterceptor(ctx, auth.Config{
 		RBACServerAddr: addr,
 		// TODO(kenji): Revisit.
@@ -43,8 +53,64 @@ func NewExternalAuthenticator(ctx context.Context, addr string) (*ExternalAuthen
 		return nil, err
 	}
 	return &ExternalAuthenticator{
-		intercepter: i,
+		intercepter:    i,
+		tokenExchanger: tex,
 	}, nil
+}
+
+// HandleLogin handles the login request.
+func (a *ExternalAuthenticator) HandleLogin(w http.ResponseWriter, r *http.Request) {
+	cookie := &http.Cookie{
+		Name:     cookieNameRedirect,
+		Value:    r.URL.String(),
+		Path:     common.PathLoginCallback,
+		HttpOnly: true,
+	}
+	http.SetCookie(w, cookie)
+	http.Redirect(w, r, a.tokenExchanger.loginURL, http.StatusFound)
+}
+
+// HandleLoginCallback handles the login callback.
+func (a *ExternalAuthenticator) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		http.Error(w, fmt.Sprintf("method not implemented: %s", r.Method), http.StatusNotImplemented)
+		return
+	}
+
+	if errMsg := r.FormValue("error"); errMsg != "" {
+		http.Error(w, fmt.Sprintf("%s: %s", errMsg, r.FormValue("error_description")), http.StatusBadRequest)
+		return
+	}
+	code := r.FormValue("code")
+	if code == "" {
+		http.Error(w, fmt.Sprintf("no code in request: %q", r.Form), http.StatusBadRequest)
+		return
+	}
+
+	token, err := a.tokenExchanger.obtainToken(r.Context(), code)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	c, err := r.Cookie(cookieNameRedirect)
+	if err != nil {
+		http.Error(w, "failed to get a cookie", http.StatusBadRequest)
+		return
+	}
+	redirectURL := c.Value
+
+	// TODO(aya): revisit cookie settings.
+	cookie := &http.Cookie{
+		Name:     cookieNameToken,
+		Value:    token,
+		Path:     "/v1/sessions",
+		MaxAge:   86400,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, cookie)
+	http.Redirect(w, r, redirectURL, http.StatusFound)
 }
 
 // Authenticate implements Authenticator by authenticating the request with the
@@ -55,8 +121,16 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 	}
 
 	if route.isIngress {
-		// TODO(kenji): Implement the authorization.
-		return route.clusterID, route.path, nil
+		cookie, err := r.Cookie(cookieNameToken)
+		if cookie != nil && cookie.Value != "" {
+			// TODO(aya): verify token & authorize the request.
+			return route.clusterID, route.path, nil
+		}
+		if err != nil && !errors.Is(err, http.ErrNoCookie) {
+			klog.Errorf("failed to get a cookie: %s", err)
+			return "", "", ErrUnauthorized
+		}
+		return "", "", ErrLoginRequired
 	}
 
 	_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
