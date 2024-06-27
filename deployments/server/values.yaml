@@ -1,6 +1,9 @@
 global:
+  llmOperatorBaseUrl:
+
   auth:
     enable: true
+    oidcIssuerUrl:
     rbacInternalServerAddr:
 
   ingress:
@@ -27,6 +30,11 @@ tls:
 
 allowedOriginHosts:
 - localhost
+
+auth:
+  oidcClientId: session-manager
+  oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
+  resolverAddr: localhost:8080
 
 debugLog: false
 

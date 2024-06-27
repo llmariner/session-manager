@@ -42,7 +42,17 @@ func run(ctx context.Context, c *config.Config) error {
 		return fmt.Errorf("new worker authenticator: %w", err)
 	}
 
-	eauth, err := auth.NewExternalAuthenticator(ctx, c.Server.Auth.RBACServer.Addr)
+	tex, err := auth.NewTokenExchanger(ctx, auth.TokenExchangerOptions{
+		ClientID:     c.Server.Auth.OIDC.ClientID,
+		ClientSecret: c.Server.Auth.OIDC.ClientSecret,
+		BaseURL:      c.BaseURL,
+		IssuerURL:    c.Server.Auth.OIDC.IssuerURL,
+		ResolverAddr: c.Server.Auth.OIDC.ResolverAddr,
+	})
+	if err != nil {
+		return fmt.Errorf("new token exchanger: %w", err)
+	}
+	eauth, err := auth.NewExternalAuthenticator(ctx, c.Server.Auth.RBACServer.Addr, tex)
 	if err != nil {
 		return fmt.Errorf("new worker authenticator: %w", err)
 	}
@@ -52,6 +62,8 @@ func run(ctx context.Context, c *config.Config) error {
 		UpgradeProxy:          upgradeProxy,
 		AgentAuthenticator:    wauth,
 		ExternalAuthenticator: eauth,
+		LoginFunc:             eauth.HandleLogin,
+		LoginCallBackFunc:     eauth.HandleLoginCallback,
 		AllowedOriginHosts:    c.Server.GetAllowedOriginHosts(),
 	})
 
