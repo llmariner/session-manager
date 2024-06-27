@@ -107,6 +107,7 @@ func (a *ExternalAuthenticator) HandleLoginCallback(w http.ResponseWriter, r *ht
 		Path:     "/v1/sessions",
 		MaxAge:   86400,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
 	}
 	http.SetCookie(w, cookie)
 	http.Redirect(w, r, redirectURL, http.StatusFound)
