@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
@@ -43,8 +44,10 @@ type Admin struct {
 
 // Auth is the authentication configuration for the proxy.
 type Auth struct {
-	RBACServer *RBACServerAuth `yaml:"rbacServer"`
-	OIDC       OIDC            `yaml:"oidc"`
+	RBACServer      *RBACServerAuth `yaml:"rbacServer"`
+	OIDC            OIDC            `yaml:"oidc"`
+	CacheExpiration time.Duration   `yaml:"cacheExpiration"`
+	CacheCleanup    time.Duration   `yaml:"cacheCleanup"`
 }
 
 // RBACServerAuth is the configuration for authentication with RBAC server.

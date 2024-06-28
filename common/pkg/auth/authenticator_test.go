@@ -1,13 +1,16 @@
 package auth
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"testing"
 
+	rbacv1 "github.com/llm-operator/rbac-manager/api/v1"
 	"github.com/llm-operator/rbac-manager/pkg/auth"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/grpc"
 )
 
 func TestExternalAuthenticatorTest(t *testing.T) {
@@ -15,6 +18,7 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 		name          string
 		req           *http.Request
 		userInfo      auth.UserInfo
+		failAuthToken bool
 		wantClusterID string
 		wantPath      string
 		wantErr       error
@@ -142,6 +146,27 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			wantErr: ErrLoginRequired,
 		},
 		{
+			name: "ingress path invalid token",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+				},
+				Header: http.Header{
+					"Cookie": []string{fmt.Sprintf("%s=%s", cookieNameToken, "token")},
+				},
+			},
+			failAuthToken: true,
+			userInfo: auth.UserInfo{
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
+			},
+			wantErr: ErrLoginRequired,
+		},
+		{
 			name: "ingress path",
 			req: &http.Request{
 				URL: &url.URL{
@@ -169,10 +194,14 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			i := &fakeRequsetIntercepter{
 				userInfo: tc.userInfo,
 			}
-			a := ExternalAuthenticator{intercepter: i}
+			a := ExternalAuthenticator{
+				intercepter: i,
+				rbacClient:  &fakeRBACClient{!tc.failAuthToken},
+				loginCache:  &cache{},
+			}
 			gotClusterID, gotPth, err := a.Authenticate(tc.req)
 			if err != nil {
-				assert.ErrorIs(t, tc.wantErr, err)
+				assert.ErrorIs(t, err, tc.wantErr)
 				return
 			}
 			assert.NoError(t, err)
@@ -223,4 +252,16 @@ type fakeRequsetIntercepter struct {
 
 func (f *fakeRequsetIntercepter) InterceptHTTPRequest(req *http.Request) (int, auth.UserInfo, error) {
 	return http.StatusOK, f.userInfo, nil
+}
+
+type fakeRBACClient struct {
+	aurhorize bool
+}
+
+func (f *fakeRBACClient) Authorize(ctx context.Context, in *rbacv1.AuthorizeRequest, opts ...grpc.CallOption) (*rbacv1.AuthorizeResponse, error) {
+	return &rbacv1.AuthorizeResponse{Authorized: f.aurhorize}, nil
+}
+
+func (f *fakeRBACClient) AuthorizeWorker(ctx context.Context, in *rbacv1.AuthorizeWorkerRequest, opts ...grpc.CallOption) (*rbacv1.AuthorizeWorkerResponse, error) {
+	return &rbacv1.AuthorizeWorkerResponse{Authorized: f.aurhorize}, nil
 }

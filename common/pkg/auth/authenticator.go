@@ -2,13 +2,16 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
+	rbacv1 "github.com/llm-operator/rbac-manager/api/v1"
 	"github.com/llm-operator/rbac-manager/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog/v2"
 )
 
@@ -39,22 +42,37 @@ type reqIntercepter interface {
 // ExternalAuthenticator authenticates external requests with RBAC server.
 type ExternalAuthenticator struct {
 	intercepter    reqIntercepter
+	rbacClient     rbacv1.RbacInternalServiceClient
 	tokenExchanger *TokenExchanger
+	loginCache     *cache
 }
 
 // NewExternalAuthenticator returns a new ExternalAuthenticator.
-func NewExternalAuthenticator(ctx context.Context, addr string, tex *TokenExchanger) (*ExternalAuthenticator, error) {
+func NewExternalAuthenticator(
+	ctx context.Context,
+	rbacServerAddr string,
+	tex *TokenExchanger,
+	cacheExpiration, cacheCleanup time.Duration,
+) (*ExternalAuthenticator, error) {
 	i, err := auth.NewInterceptor(ctx, auth.Config{
-		RBACServerAddr: addr,
+		RBACServerAddr: rbacServerAddr,
 		// TODO(kenji): Revisit.
 		AccessResource: "api.fine_tuning.jobs",
 	})
 	if err != nil {
 		return nil, err
 	}
+
+	conn, err := grpc.DialContext(ctx, rbacServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return nil, err
+	}
+
 	return &ExternalAuthenticator{
 		intercepter:    i,
+		rbacClient:     rbacv1.NewRbacInternalServiceClient(conn),
 		tokenExchanger: tex,
+		loginCache:     newCacheWithCleaner(ctx, cacheExpiration, cacheExpiration),
 	}, nil
 }
 
@@ -121,16 +139,10 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 	}
 
 	if route.isIngress {
-		cookie, err := r.Cookie(cookieNameToken)
-		if cookie != nil && cookie.Value != "" {
-			// TODO(aya): verify token & authorize the request.
-			return route.clusterID, route.path, nil
+		if err := a.authenticateService(r, route); err != nil {
+			return "", "", err
 		}
-		if err != nil && !errors.Is(err, http.ErrNoCookie) {
-			klog.Errorf("failed to get a cookie: %s", err)
-			return "", "", ErrUnauthorized
-		}
-		return "", "", ErrLoginRequired
+		return route.clusterID, route.path, nil
 	}
 
 	_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
@@ -151,6 +163,34 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 	}
 
 	return route.clusterID, route.path, nil
+}
+
+func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route) error {
+	cookie, err := r.Cookie(cookieNameToken)
+	if cookie == nil || cookie.Value == "" {
+		klog.V(2).Infof("failed to get a cookie: %s", err)
+		return ErrLoginRequired
+	}
+	token := cookie.Value
+
+	v, ok := a.loginCache.get(token)
+	if ok && v == route.service {
+		return nil
+	}
+
+	resp, err := a.rbacClient.Authorize(r.Context(), &rbacv1.AuthorizeRequest{
+		// TODO(aya): revisit
+		Token:          token,
+		AccessResource: "api.workspaces.notebooks",
+		Capability:     "read",
+	})
+	if err != nil || !resp.Authorized {
+		klog.V(2).Infof("failed to authorize token: %s (%+v)", err, resp)
+		return ErrLoginRequired
+	}
+
+	a.loginCache.set(token, route.service)
+	return nil
 }
 
 type reqWorkerIntercepter interface {
@@ -190,6 +230,7 @@ type route struct {
 	path      string
 
 	isIngress bool
+	service   string
 	namespace string
 }
 
@@ -208,6 +249,8 @@ func extractRoute(origPath string) (route, bool) {
 		return route{
 			clusterID: clusterID,
 			isIngress: true,
+			// e.g., notebooks/<notebook ID>
+			service: fmt.Sprintf("%s/%s", s[6], s[7]),
 			// It is natural to truncate "/v1/sessions/<cluster ID>" when
 			// forwarding the request, but we're not doing that here since
 			// it does not work well with Jupyter Notebook.

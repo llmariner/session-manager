@@ -26,6 +26,8 @@ data:
           clientId: {{ .Values.auth.oidcClientId }}
           clientSecret: {{ .Values.auth.oidcClientSecret }}
           resolverAddr: {{ .Values.auth.resolverAddr }}
+        cacheExpiration: {{ .Values.auth.cacheExpiration }}
+        cacheCleanup: {{ .Values.auth.cacheCleanup }}
         {{- end }}
       allowedOriginHosts:
       {{- toYaml .Values.allowedOriginHosts | nindent 6 }}
