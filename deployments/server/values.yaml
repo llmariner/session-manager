@@ -35,6 +35,8 @@ auth:
   oidcClientId: session-manager
   oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
   resolverAddr: localhost:8080
+  cacheExpiration: 1m
+  cacheCleanup: 15m
 
 debugLog: false
 

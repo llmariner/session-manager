@@ -47,7 +47,7 @@ func NewTokenExchanger(ctx context.Context, opts TokenExchangerOptions) (*TokenE
 	q.Add("client_id", opts.ClientID)
 	q.Add("redirect_uri", redirectURL)
 	q.Add("response_type", "code")
-	q.Add("scope", "openid")
+	q.Add("scope", "openid email")
 	loginURL.RawQuery = q.Encode()
 
 	return &TokenExchanger{
