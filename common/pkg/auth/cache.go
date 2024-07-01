@@ -25,7 +25,7 @@ func newCacheWithCleaner(ctx context.Context, expiration, cleanup time.Duration)
 
 type cacheItem struct {
 	value      string
-	expiration int64
+	expiration time.Time
 }
 
 type cache struct {
@@ -34,7 +34,7 @@ type cache struct {
 }
 
 func (c *cache) set(key string, value string) {
-	exp := time.Now().Add(c.expiration).UnixNano()
+	exp := time.Now().Add(c.expiration)
 	c.items.Store(key, cacheItem{value: value, expiration: exp})
 }
 
@@ -44,7 +44,7 @@ func (c *cache) get(key string) (string, bool) {
 		return "", false
 	}
 	item, ok := v.(cacheItem)
-	if !ok || time.Now().UnixNano() > item.expiration {
+	if !ok || time.Now().After(item.expiration) {
 		c.items.Delete(key)
 		return "", false
 	}
@@ -52,10 +52,10 @@ func (c *cache) get(key string) (string, bool) {
 }
 
 func (c *cache) cleanup() {
-	now := time.Now().UnixNano()
+	now := time.Now()
 	c.items.Range(func(key, value any) bool {
 		item, ok := value.(cacheItem)
-		if !ok || now > item.expiration {
+		if !ok || now.After(item.expiration) {
 			c.items.Delete(key)
 		}
 		return true

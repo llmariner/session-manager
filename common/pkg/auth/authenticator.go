@@ -63,7 +63,7 @@ func NewExternalAuthenticator(
 		return nil, err
 	}
 
-	conn, err := grpc.DialContext(ctx, rbacServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.NewClient(rbacServerAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
@@ -175,6 +175,8 @@ func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route
 
 	v, ok := a.loginCache.get(token)
 	if ok && v == route.service {
+		// NOTE: we should check if token is still valid, but we're not doing that here.
+		// Cache expiration should set short enough to take care of this.
 		return nil
 	}
 
