@@ -41,7 +41,7 @@ auth:
 debugLog: false
 
 image:
-  repository: public.ecr.aws/v8n3t7y5/llm-operator/session-manager-server
+  repository: public.ecr.aws/cloudnatix/llm-operator/session-manager-server
   pullPolicy: IfNotPresent
 
 replicaCount: 1

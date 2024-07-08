@@ -39,7 +39,7 @@ readinessProbe:
   initialDelaySeconds: 5
 
 image:
-  repository: public.ecr.aws/v8n3t7y5/llm-operator/session-manager-agent
+  repository: public.ecr.aws/cloudnatix/llm-operator/session-manager-agent
   pullPolicy: IfNotPresent
 
 version:
