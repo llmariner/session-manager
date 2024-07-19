@@ -479,20 +479,6 @@ func (a *fakeAuthenticator) Authenticate(_ *http.Request) (string, string, error
 	return a.clusterID, "path", nil
 }
 
-// fakeIdentifier is an Identifier for use in tests.
-type fakeIdentifier struct {
-	id  string
-	err error
-}
-
-// Identify implements Identifier by returning ether the store ID or and error.
-func (i *fakeIdentifier) Identify(_ *http.Request) (string, error) {
-	if i.err != nil {
-		return "", i.err
-	}
-	return i.id + ":443", nil
-}
-
 // fakeProxy is a proxy.Proxy for user in tests.
 type fakeProxy struct {
 	id   string
