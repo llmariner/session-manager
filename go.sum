@@ -46,6 +46,8 @@ github.com/lestrrat-go/jwx v1.2.29/go.mod h1:hU8k2l6WF0ncx20uQdOmik/Gjg6E3/wIRtX
 github.com/lestrrat-go/option v1.0.0/go.mod h1:5ZHFbivi4xwXxhxY9XHDe2FHo6/Z7WWmtT7T5nBBp3I=
 github.com/lestrrat-go/option v1.0.1 h1:oAzP2fvZGQKWkvHa1/SAcFolBEca1oN+mQ7eooNBEYU=
 github.com/lestrrat-go/option v1.0.1/go.mod h1:5ZHFbivi4xwXxhxY9XHDe2FHo6/Z7WWmtT7T5nBBp3I=
+github.com/llm-operator/common v0.4.0 h1:58GLWPhshh9PPNcl2Vu2so7IvINc0RUz3wre67UU4w4=
+github.com/llm-operator/common v0.4.0/go.mod h1:NQpm0/EQnyXz/a67TftLWF3Ju0hgaalViND67s2sRVs=
 github.com/llm-operator/rbac-manager v0.74.0 h1:wE5IW7Skuf8a4Vhj/rH5VIUz5cFbU2fnYIeu0LELhjQ=
 github.com/llm-operator/rbac-manager v0.74.0/go.mod h1:fDJPucbAZE+R1m3VaU+vF7alVgrSirUoWqxnPKvMAGc=
 github.com/pkg/errors v0.9.1 h1:FEBLx1zS214owpjy7qsBeixbURkuhQAwrK5UwLGTwt4=

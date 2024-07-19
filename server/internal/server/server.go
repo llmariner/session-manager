@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/llm-operator/common/pkg/certlib/store"
 	"github.com/llm-operator/session-manager/common/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
-	"github.com/llm-operator/session-manager/server/internal/certlib"
 	"github.com/llm-operator/session-manager/server/internal/proxy"
 	"k8s.io/klog/v2"
 )
@@ -94,7 +94,7 @@ func RunHTTPServer(
 	// TLS certificates.
 	var tlsConfig *tls.Config
 	if t := opts.TLS; t != nil {
-		st, err := certlib.NewReloadingFileStore(certlib.ReloadingFileStoreOpts{
+		st, err := store.NewReloadingFileStore(store.ReloadingFileStoreOpts{
 			KeyPath:  t.KeyPath,
 			CertPath: t.CertPath,
 		})
