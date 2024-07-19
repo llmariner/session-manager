@@ -6,6 +6,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/golang-jwt/jwt v3.2.2+incompatible
 	github.com/lestrrat-go/jwx v1.2.29
+	github.com/llm-operator/common v0.4.0
 	github.com/llm-operator/rbac-manager v0.74.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5
