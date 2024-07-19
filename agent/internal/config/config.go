@@ -19,9 +19,34 @@ type Config struct {
 	HTTPPort int `yaml:"httpPort"`
 }
 
+// Validate validates the configuration.
+func (c *Config) Validate() error {
+	if err := c.Admin.validate(); err != nil {
+		return fmt.Errorf("admin: %s", err)
+	}
+	if err := c.Proxy.validate(); err != nil {
+		return fmt.Errorf("proxy: %s", err)
+	}
+	if err := c.Envoy.validate(); err != nil {
+		return fmt.Errorf("envoy: %s", err)
+	}
+	if c.HTTPPort <= 0 {
+		return fmt.Errorf("httpPort must be greater than 0")
+	}
+	return nil
+
+}
+
 // Admin is the configuration for the Admin server.
 type Admin struct {
 	Socket string `yaml:"socket"`
+}
+
+func (a *Admin) validate() error {
+	if a.Socket == "" {
+		return fmt.Errorf("config: admin: socket: must be set")
+	}
+	return nil
 }
 
 // Proxy is the configuration for connecting to the proxy.
@@ -32,11 +57,34 @@ type Proxy struct {
 	TLS TLS `yaml:"tls"`
 }
 
+func (p *Proxy) validate() error {
+	if err := p.HTTP.validate(); err != nil {
+		return fmt.Errorf("http: %s", err)
+	}
+	if err := p.Upgrade.validate(); err != nil {
+		return fmt.Errorf("upgrade: %s", err)
+	}
+	return nil
+}
+
 // Tunnel is the configuration for a tunnel.
 type Tunnel struct {
 	URL         string        `yaml:"url"`
 	PoolSize    int           `yaml:"poolSize"`
 	DialTimeout time.Duration `yaml:"dialTimeout"`
+}
+
+func (t *Tunnel) validate() error {
+	if t.URL == "" {
+		return fmt.Errorf("url must be set")
+	}
+	if t.PoolSize <= 0 {
+		return fmt.Errorf("poolSize must be greater than 0")
+	}
+	if t.DialTimeout <= 0 {
+		return fmt.Errorf("dialTimeout must be greater than 0")
+	}
+	return nil
 }
 
 // TLS is the configuration for TLS.
@@ -47,6 +95,13 @@ type TLS struct {
 // Envoy is the configuration for connecting to Envoy.
 type Envoy struct {
 	Socket string `yaml:"socket"`
+}
+
+func (e *Envoy) validate() error {
+	if e.Socket == "" {
+		return fmt.Errorf("socket must be set")
+	}
+	return nil
 }
 
 // Parse parses a configuration file at the given path and returns a Config
