@@ -149,7 +149,9 @@ func RunHTTPServer(
 		m := http.NewServeMux()
 		m.Handle(common.PathLoginCallback, opts.Server.loginCallBackFunc)
 		m.Handle("/", http.HandlerFunc(opts.Server.handleProxy))
-		errCh <- listenAndServe(m, tlsConfig, opts.Port)
+		// Only enable TLS for the agent server and does not enable TLS here.
+		// This endpoint is behind an ingress controller, which terminates TLS.
+		errCh <- listenAndServe(m, nil /* tlsConfig */, opts.Port)
 	}()
 
 	return <-errCh
