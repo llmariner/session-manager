@@ -45,3 +45,10 @@ image:
   pullPolicy: IfNotPresent
 
 replicaCount: 1
+
+podAnnotations:
+nodeSelector:
+affinity:
+tolerations:
+
+version:
