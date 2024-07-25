@@ -20,6 +20,10 @@ proxy:
 
 ingressControllerAddress:
 ingressControllerPort:
+# gateway{Address,Port} are equivalent to ingressController{Address,Port}, but
+# they are defined here to avoid confusion when the Gateway API is used.
+gatewayAddress:
+gatewayPort:
 
 httpPort: 8080
 
