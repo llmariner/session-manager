@@ -164,5 +164,10 @@ data:
             - endpoint:
                 address:
                   socket_address:
+                    {{- if .Values.ingressControllerAddress }}
                     address:  {{ .Values.ingressControllerAddress }}
                     port_value: {{ .Values.ingressControllerPort }}
+                    {{- else }}
+                    address:  {{ .Values.gatewayAddress }}
+                    port_value: {{ .Values.gatewayPort }}
+                    {{- end }}
