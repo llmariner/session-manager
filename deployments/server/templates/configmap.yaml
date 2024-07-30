@@ -29,5 +29,7 @@ data:
         cacheExpiration: {{ .Values.auth.cacheExpiration }}
         cacheCleanup: {{ .Values.auth.cacheCleanup }}
         {{- end }}
+      {{- with .Values.allowedOriginHosts }}
       allowedOriginHosts:
-      {{- toYaml .Values.allowedOriginHosts | nindent 6 }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
