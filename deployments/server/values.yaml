@@ -24,6 +24,13 @@ httpPort: 8080
 adminPort: 8081
 workerServiceHttpPort: 8082
 
+workerServiceHttpService:
+  type: ClusterIP
+  port: 8082
+  nodePort:
+  annotations:
+  externalTrafficPolicy:
+
 tls:
   enable: false
   secretName:
