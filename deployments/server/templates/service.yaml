@@ -28,6 +28,9 @@ metadata:
     {{- end }}
 spec:
   type: {{ .Values.workerServiceHttpService.type }}
+  {{- if .Values.workerServiceHttpService.externalTrafficPolicy }}
+  externalTrafficPolicy: {{ .Values.workerServiceHttpService.externalTrafficPolicy }}
+  {{- end }}
   ports:
   - name: http
     protocol: TCP
@@ -35,9 +38,6 @@ spec:
     targetPort: ws-http
     {{- if .Values.workerServiceHttpService.nodePort }}
     nodePort: {{ .Values.workerServiceHttpService.nodePort }}
-    {{- end }}
-    {{- if .Values.workerServiceHttpService.externalTrafficPolicy }}
-    externalTrafficPolicy: {{ .Values.workerServiceHttpService.externalTrafficPolicy }}
     {{- end }}
   selector:
     {{- include "session-manager-server.selectorLabels" . | nindent 4 }}
