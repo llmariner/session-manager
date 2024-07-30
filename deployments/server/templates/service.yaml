@@ -23,7 +23,7 @@ metadata:
   labels:
     {{- include "session-manager-server.labels" . | nindent 4 }}
   annotations:
-    {{- with .Values.workerServiceGrpcService.annotations }}
+    {{- with .Values.workerServiceHttpService.annotations }}
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
