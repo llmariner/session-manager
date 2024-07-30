@@ -5,7 +5,9 @@ metadata:
   labels:
     {{- include "session-manager-server.labels" . | nindent 4 }}
   annotations:
-    {{- toYaml .Values.global.ingress.annotations | nindent 4 }}
+    {{- with .Values.global.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.global.ingress.ingressClassName }}
   {{- with .Values.global.ingress.tls }}
@@ -39,7 +41,9 @@ metadata:
   annotations:
     # Do not use global.workerServiceIngress.annotations since it is used for
     # gRPC for other services.
-    {{- toYaml .Values.global.ingress.annotations | nindent 4 }}
+    {{- with .Values.global.ingress.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
   ingressClassName: {{ .Values.global.workerServiceIngress.ingressClassName }}
   {{- with .Values.global.workerServiceIngress.tls }}
