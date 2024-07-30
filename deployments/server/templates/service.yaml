@@ -27,7 +27,7 @@ metadata:
     {{- toYaml . | nindent 4 }}
     {{- end }}
 spec:
-  type: ClusterIP
+  type: {{ .Values.workerServiceHttpService.type }}
   ports:
   - name: http
     protocol: TCP
