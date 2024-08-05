@@ -29,9 +29,3 @@ rules:
   verbs:
   - create
   - patch
-- apiGroups:
-  - "batch"
-  resources:
-  - jobs
-  verbs:
-  - patch
