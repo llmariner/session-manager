@@ -41,7 +41,7 @@ spec:
     {{- end }}
   {{- with .Values.workerServiceHttpService.loadBalancerSourceRanges }}
   loadBalancerSourceRanges:
-    {{- include . | nindent 4 }}
+    {{- toYaml . | nindent 4 }}
   {{- end }}
   selector:
     {{- include "session-manager-server.selectorLabels" . | nindent 4 }}
