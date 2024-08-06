@@ -39,5 +39,9 @@ spec:
     {{- if .Values.workerServiceHttpService.nodePort }}
     nodePort: {{ .Values.workerServiceHttpService.nodePort }}
     {{- end }}
+  {{- with .Values.workerServiceHttpService.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+    {{- include . | nindent 4 }}
+  {{- end }}
   selector:
     {{- include "session-manager-server.selectorLabels" . | nindent 4 }}
