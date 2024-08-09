@@ -52,3 +52,10 @@ affinity:
 tolerations:
 
 version:
+
+resources:
+  requests:
+    cpu: "250m"
+    memory: "500Mi"
+  limits:
+    cpu: "250m"

@@ -81,6 +81,8 @@ spec:
           readOnly: true
         - name: sockets
           mountPath: /tmp/sockets
+        resources:
+          {{- toYaml .Values.resources | nindent 10 }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
