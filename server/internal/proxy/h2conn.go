@@ -25,8 +25,7 @@ type h2ConnPool struct {
 	t *http2.Transport
 	m sync.RWMutex
 
-	// TODO: support multiple client connections per agent key.
-	conns map[string]*http2.ClientConn
+	conns map[string][]*http2.ClientConn
 
 	observer ConnObserver
 }
@@ -36,7 +35,7 @@ type h2ConnPool struct {
 func newH2ConnPool(t *http2.Transport) *h2ConnPool {
 	p := &h2ConnPool{
 		t:     t,
-		conns: make(map[string]*http2.ClientConn),
+		conns: make(map[string][]*http2.ClientConn),
 	}
 	t.ConnPool = p
 	return p
@@ -63,7 +62,7 @@ func (p *h2ConnPool) AddConn(conn net.Conn, id string) error {
 	if err != nil {
 		return err
 	}
-	p.conns[id] = c
+	p.conns[id] = append(p.conns[id], c)
 
 	return nil
 }
@@ -77,16 +76,18 @@ func (p *h2ConnPool) GetClientConn(r *http.Request, _ string) (*http2.ClientConn
 	id := r.Host
 	klog.Infof("fetching HTTP connection; ID=%q, URL=%s", id, r.URL)
 
-	c, ok := p.conns[id]
+	cs, ok := p.conns[id]
 	if !ok {
 		return nil, fmt.Errorf("tunnel: get client conn: client not found (ID=%q)", id)
 	}
 
-	if !c.CanTakeNewRequest() {
-		return nil, fmt.Errorf("tunnel: get client conn: client not connected (ID=%q)", id)
+	for _, c := range cs {
+		if c.CanTakeNewRequest() {
+			return c, nil
+		}
 	}
 
-	return c, nil
+	return nil, fmt.Errorf("tunnel: get client conn: client not connected (ID=%q)", id)
 }
 
 // MarkDead implements http2.ClientConnPool by marking the http2.ClientConn as
@@ -95,17 +96,25 @@ func (p *h2ConnPool) MarkDead(c *http2.ClientConn) {
 	p.m.Lock()
 	defer p.m.Unlock()
 	found := false
-	for id, cp := range p.conns {
-		if cp == c {
+	for id, cps := range p.conns {
+		if found {
+			break
+		}
+
+		var newConns []*http2.ClientConn
+		for _, cp := range cps {
+			if cp != c {
+				newConns = append(newConns, cp)
+				continue
+			}
 			klog.Infof("marking connection dead; ID=%q", id)
 			_ = cp.Close()
-			delete(p.conns, id)
 			found = true
 			if p.observer != nil {
 				p.observer.OnMarkDead(id)
 			}
-			break
 		}
+		p.conns[id] = newConns
 	}
 	if !found {
 		klog.Errorf("no connection found when marking dead")
@@ -133,8 +142,8 @@ func (p *h2ConnPool) status() []connStatus {
 	defer p.m.RUnlock()
 
 	var status []connStatus
-	for k := range p.conns {
-		status = append(status, connStatus{name: k, count: 1})
+	for id, conns := range p.conns {
+		status = append(status, connStatus{name: id, count: len(conns)})
 	}
 
 	return status
