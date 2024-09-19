@@ -125,8 +125,7 @@ func (p *h2ConnPool) MarkDead(c *http2.ClientConn) {
 func (p *h2ConnPool) hasConn(id string) bool {
 	p.m.RLock()
 	defer p.m.RUnlock()
-	_, ok := p.conns[id]
-	return ok
+	return len(p.conns[id]) > 0
 }
 
 // connStatus is a tuple of connection name and a count of the number of open
