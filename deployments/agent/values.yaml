@@ -13,7 +13,8 @@ proxy:
   baseUrl: http://session-manager-server-worker-service-http:8082
   http:
     # pool size of the HTTP tunnel
-    poolSize: 3
+    # Currently server supports only one channel per agent.
+    poolSize: 1
   upgrade:
     # pool size of the HTTP upgrade tunnel
     poolSize: 10
