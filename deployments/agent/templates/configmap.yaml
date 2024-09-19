@@ -83,7 +83,7 @@ data:
                   - match:
                       prefix: "/v1/sessions"
                     route:
-                      cluster: ingress
+                      cluster: services
                       idle_timeout: 0s
                       timeout: 0s
               http_filters:
@@ -100,6 +100,25 @@ data:
                     function envoy_on_request(request_handle)
                       request_handle:headers():replace("Authorization", "Bearer " .. get_token())
                     end
+              - name: envoy.filters.http.lua
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+                  inline_code: |
+                    local function starts_with(str, start)
+                      return str:sub(1, #start) == start
+                    end
+                    function envoy_on_request(request_handle)
+                      local path = request_handle:headers():get(":path")
+                      if starts_with(path, "/v1/sessions") then
+                        request_handle:headers():replace(":authority", string.gsub(path, "/v1/sessions/[^/]+/v1/services/notebooks/([^/]+)/([^/?]+).*", "%1.%2.svc.cluster.local:8888"))
+                      end
+                    end
+              - name: envoy.filters.http.dynamic_forward_proxy
+                typed_config:
+                  "@type": type.googleapis.com/envoy.extensions.filters.http.dynamic_forward_proxy.v3.FilterConfig
+                  dns_cache_config:
+                    name: dynamic_forward_proxy_cache_config
+                    dns_lookup_family: V4_ONLY
               - name: envoy.filters.http.router
                 typed_config:
                   "@type": type.googleapis.com/envoy.extensions.filters.http.router.v3.Router
@@ -151,23 +170,16 @@ data:
                   trusted_ca:
                     filename: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
-      - name: ingress
+      - name: services
         connect_timeout: 0.25s
         upstream_connection_options:
           tcp_keepalive:
             keepalive_time: 60
-        type: STRICT_DNS
-        load_assignment:
-          cluster_name: ingress
-          endpoints:
-          - lb_endpoints:
-            - endpoint:
-                address:
-                  socket_address:
-                    {{- if .Values.ingressControllerAddress }}
-                    address:  {{ .Values.ingressControllerAddress }}
-                    port_value: {{ .Values.ingressControllerPort }}
-                    {{- else }}
-                    address:  {{ .Values.gatewayAddress }}
-                    port_value: {{ .Values.gatewayPort }}
-                    {{- end }}
+        lb_policy: CLUSTER_PROVIDED
+        cluster_type:
+          name: envoy.clusters.dynamic_forward_proxy
+          typed_config:
+             "@type": type.googleapis.com/envoy.extensions.clusters.dynamic_forward_proxy.v3.ClusterConfig
+             dns_cache_config:
+               name: dynamic_forward_proxy_cache_config
+               dns_lookup_family: V4_ONLY
