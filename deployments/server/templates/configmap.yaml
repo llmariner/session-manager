@@ -21,6 +21,8 @@ data:
         {{- if .Values.global.auth.enable }}
         rbacServer:
           addr: {{ .Values.global.auth.rbacInternalServerAddr }}
+        dexServer:
+	  addr: {{ .Values.global.auth.dexServerAddr }}
         oidc:
           issuerUrl: {{ .Values.global.auth.oidcIssuerUrl }}
           clientId: {{ .Values.auth.oidcClientId }}
