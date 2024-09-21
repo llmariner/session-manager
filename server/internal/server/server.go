@@ -13,8 +13,8 @@ import (
 	"time"
 
 	"github.com/llm-operator/common/pkg/certlib/store"
-	"github.com/llm-operator/session-manager/common/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
+	"github.com/llm-operator/session-manager/server/internal/auth"
 	"github.com/llm-operator/session-manager/server/internal/proxy"
 	"k8s.io/klog/v2"
 )

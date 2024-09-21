@@ -5,8 +5,8 @@ import (
 	"flag"
 	"fmt"
 
-	"github.com/llm-operator/session-manager/common/pkg/auth"
 	"github.com/llm-operator/session-manager/server/internal/admin"
+	"github.com/llm-operator/session-manager/server/internal/auth"
 	"github.com/llm-operator/session-manager/server/internal/config"
 	"github.com/llm-operator/session-manager/server/internal/proxy"
 	"github.com/llm-operator/session-manager/server/internal/server"

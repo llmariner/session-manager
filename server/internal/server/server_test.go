@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/llm-operator/session-manager/common/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
+	"github.com/llm-operator/session-manager/server/internal/auth"
 	"github.com/llm-operator/session-manager/server/internal/proxy"
 	"github.com/stretchr/testify/assert"
 )
