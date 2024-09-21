@@ -88,6 +88,7 @@ func (a *Admin) validate() error {
 // Auth is the authentication configuration for the proxy.
 type Auth struct {
 	RBACServer      *RBACServerAuth `yaml:"rbacServer"`
+	DexServer       *DexServerAuth  `yaml:"dexServerAuth"`
 	OIDC            OIDC            `yaml:"oidc"`
 	CacheExpiration time.Duration   `yaml:"cacheExpiration"`
 	CacheCleanup    time.Duration   `yaml:"cacheCleanup"`
@@ -100,7 +101,11 @@ func (a *Auth) validate() error {
 	}
 
 	if err := a.RBACServer.validate(); err != nil {
-		return err
+		return fmt.Errorf("rbacServer: %s", err)
+	}
+
+	if err := a.DexServer.validate(); err != nil {
+		return fmt.Errorf("dexServer: %s", err)
 	}
 
 	if err := a.OIDC.validate(); err != nil {
@@ -122,6 +127,18 @@ type RBACServerAuth struct {
 }
 
 func (r *RBACServerAuth) validate() error {
+	if r.Addr == "" {
+		return fmt.Errorf("addr must be set")
+	}
+	return nil
+}
+
+// DexServerAuth is the configuration for authentication with Dex server.
+type DexServerAuth struct {
+	Addr string `yaml:"addr"`
+}
+
+func (r *DexServerAuth) validate() error {
 	if r.Addr == "" {
 		return fmt.Errorf("addr must be set")
 	}

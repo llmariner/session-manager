@@ -12,16 +12,21 @@ import (
 
 // TokenExchangerOptions is the options for TokenExchanger.
 type TokenExchangerOptions struct {
-	ClientID     string
-	ClientSecret string
-	BaseURL      string
-	IssuerURL    string
-	ResolverAddr string
+	ClientID      string
+	ClientSecret  string
+	BaseURL       string
+	IssuerURL     string
+	DexServerAddr string
+	ResolverAddr  string
 }
 
 // NewTokenExchanger returns a new TokenExchanger.
 func NewTokenExchanger(ctx context.Context, opts TokenExchangerOptions) (*TokenExchanger, error) {
-	provider, err := oidc.NewProvider(ctx, opts.IssuerURL)
+	// Allow the issuer URL to be different from the discovery URL (= URL that is passed to oidc.newProvider()).
+	// This is required since the discovery URL is the Dex server URL.
+	pCtx := oidc.InsecureIssuerURLContext(ctx, opts.IssuerURL)
+
+	provider, err := oidc.NewProvider(pCtx, fmt.Sprintf("http://%s/v1/dex", opts.DexServerAddr))
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider: %v", err)
 	}
