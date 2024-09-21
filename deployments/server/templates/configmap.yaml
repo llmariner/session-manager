@@ -6,7 +6,6 @@ metadata:
     {{- include "session-manager-server.labels" . | nindent 4 }}
 data:
   config.yaml: |
-    baseUrl: {{ .Values.global.llmOperatorBaseUrl }}
     admin:
       port: {{ .Values.adminPort }}
     server:
@@ -27,7 +26,7 @@ data:
           issuerUrl: {{ .Values.global.auth.oidcIssuerUrl }}
           clientId: {{ .Values.auth.oidcClientId }}
           clientSecret: {{ .Values.auth.oidcClientSecret }}
-          resolverAddr: {{ .Values.auth.resolverAddr }}
+          redirectUri:  {{ .Values.auth.oidcRedirectUri }}
         cacheExpiration: {{ .Values.auth.cacheExpiration }}
         cacheCleanup: {{ .Values.auth.cacheCleanup }}
         {{- end }}

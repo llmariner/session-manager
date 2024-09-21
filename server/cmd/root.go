@@ -43,12 +43,12 @@ func run(ctx context.Context, c *config.Config) error {
 	}
 
 	tex, err := auth.NewTokenExchanger(ctx, auth.TokenExchangerOptions{
-		ClientID:      c.Server.Auth.OIDC.ClientID,
-		ClientSecret:  c.Server.Auth.OIDC.ClientSecret,
-		BaseURL:       c.BaseURL,
-		IssuerURL:     c.Server.Auth.OIDC.IssuerURL,
+		ClientID:     c.Server.Auth.OIDC.ClientID,
+		ClientSecret: c.Server.Auth.OIDC.ClientSecret,
+		IssuerURL:    c.Server.Auth.OIDC.IssuerURL,
+		RedirectURI:  c.Server.Auth.OIDC.RedirectURI,
+
 		DexServerAddr: c.Server.Auth.DexServer.Addr,
-		ResolverAddr:  c.Server.Auth.OIDC.ResolverAddr,
 	})
 	if err != nil {
 		return fmt.Errorf("new token exchanger: %w", err)
