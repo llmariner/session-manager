@@ -88,7 +88,7 @@ func (a *Admin) validate() error {
 // Auth is the authentication configuration for the proxy.
 type Auth struct {
 	RBACServer      *RBACServerAuth `yaml:"rbacServer"`
-	DexServer       *DexServerAuth  `yaml:"dexServerAuth"`
+	DexServer       *DexServerAuth  `yaml:"dexServer"`
 	OIDC            OIDC            `yaml:"oidc"`
 	CacheExpiration time.Duration   `yaml:"cacheExpiration"`
 	CacheCleanup    time.Duration   `yaml:"cacheCleanup"`
