@@ -23,10 +23,10 @@ data:
         dexServer:
           addr: {{ .Values.global.auth.dexServerAddr }}
         oidc:
-          issuerUrl: {{ .Values.global.auth.oidcIssuerUrl }}
+          issuerUrl: {{ .Values.global.ingress.controllerUrl }}/v1/dex
           clientId: {{ .Values.auth.oidcClientId }}
           clientSecret: {{ .Values.auth.oidcClientSecret }}
-          redirectUri:  {{ .Values.auth.oidcRedirectUri }}
+          redirectUri:  {{ .Values.global.ingress.controllerUrl }}/v1/sessions/callback
         cacheExpiration: {{ .Values.auth.cacheExpiration }}
         cacheCleanup: {{ .Values.auth.cacheCleanup }}
         {{- end }}

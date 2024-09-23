@@ -1,12 +1,12 @@
 global:
   auth:
     enable: true
-    oidcIssuerUrl:
     rbacInternalServerAddr:
     dexServerAddr:
 
   ingress:
     ingressClassName:
+    controllerUrl:
     annotations:
     tls:
       hosts:
@@ -42,7 +42,6 @@ auth:
   # These are the default values configured in https://github.com/llm-operator/rbac-manager/blob/main/deployments/dex-server/values.yaml#L43.
   oidcClientId: session-manager
   oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
-  oidcRedirectUri: http://localhost:8080/v1/sessions/callback
   cacheExpiration: 1m
   cacheCleanup: 15m
 
