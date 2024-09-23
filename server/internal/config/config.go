@@ -11,16 +11,12 @@ import (
 
 // Config is the configuration for the proxy.
 type Config struct {
-	BaseURL string `yaml:"baseUrl"`
-	Server  Server `yaml:"server"`
-	Admin   Admin  `yaml:"admin"`
+	Server Server `yaml:"server"`
+	Admin  Admin  `yaml:"admin"`
 }
 
 // Validate validates the configuration.
 func (c *Config) Validate() error {
-	if c.BaseURL == "" {
-		return fmt.Errorf("baseUrl must be set")
-	}
 	if err := c.Server.validate(); err != nil {
 		return err
 	}
@@ -150,7 +146,7 @@ type OIDC struct {
 	ClientID     string `yaml:"clientId"`
 	ClientSecret string `yaml:"clientSecret"`
 	IssuerURL    string `yaml:"issuerUrl"`
-	ResolverAddr string `yaml:"resolverAddr"`
+	RedirectURI  string `yaml:"redirectUri"`
 }
 
 func (o *OIDC) validate() error {
@@ -163,8 +159,8 @@ func (o *OIDC) validate() error {
 	if o.IssuerURL == "" {
 		return fmt.Errorf("issuerUrl must be set")
 	}
-	if o.ResolverAddr == "" {
-		return fmt.Errorf("resolverAddr must be set")
+	if o.RedirectURI == "" {
+		return fmt.Errorf("redirectUri must be set")
 	}
 	return nil
 }

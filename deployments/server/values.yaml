@@ -1,6 +1,4 @@
 global:
-  llmOperatorBaseUrl:
-
   auth:
     enable: true
     oidcIssuerUrl:
@@ -44,9 +42,7 @@ auth:
   # These are the default values configured in https://github.com/llm-operator/rbac-manager/blob/main/deployments/dex-server/values.yaml#L43.
   oidcClientId: session-manager
   oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
-  # This works when a local browser can hit the ingress controller
-  # Override the login URL and the redirect URL in JWKS. This is needed when the issuer URL is not reachable from
-  resolverAddr: localhost:8080
+  oidcRedirectUri: http://localhost:8080/v1/sessions/callback
   cacheExpiration: 1m
   cacheCleanup: 15m
 
