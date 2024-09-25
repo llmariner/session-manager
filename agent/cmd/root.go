@@ -40,11 +40,11 @@ func run(ctx context.Context, c *config.Config) error {
 	baseURL := c.Proxy.BaseURL
 	if baseURL == "" {
 		// Construct the base URL from c.SessionManagerServerWorkerServiceAddr.
-		prefix := "http://"
+		protocol := "http"
 		if c.Proxy.TLS.Enable {
-			prefix = "https://"
+			protocol = "https"
 		}
-		baseURL = fmt.Sprintf("%s:%s", prefix, c.SessionManagerServerWorkerServiceAddr)
+		baseURL = fmt.Sprintf("%s://%s", protocol, c.SessionManagerServerWorkerServiceAddr)
 	}
 	urlHTTP, err := url.Parse(baseURL + c.Proxy.HTTP.Path)
 	if err != nil {
