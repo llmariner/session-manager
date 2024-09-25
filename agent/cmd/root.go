@@ -37,7 +37,16 @@ func run(ctx context.Context, c *config.Config) error {
 	errC := make(chan error)
 
 	// HTTP tunnel.
-	urlHTTP, err := url.Parse(c.Proxy.HTTP.URL)
+	baseURL := c.Proxy.BaseURL
+	if baseURL == "" {
+		// Construct the base URL from c.SessionManagerServerWorkerServiceAddr.
+		prefix := "http://"
+		if c.Proxy.TLS.Enable {
+			prefix = "https://"
+		}
+		baseURL = fmt.Sprintf("%s:%s", prefix, c.SessionManagerServerWorkerServiceAddr)
+	}
+	urlHTTP, err := url.Parse(baseURL + c.Proxy.HTTP.Path)
 	if err != nil {
 		return err
 	}
@@ -56,7 +65,7 @@ func run(ctx context.Context, c *config.Config) error {
 	}
 
 	// HTTP upgrade tunnel.
-	urlUpgrade, err := url.Parse(c.Proxy.Upgrade.URL)
+	urlUpgrade, err := url.Parse(baseURL + c.Proxy.Upgrade.Path)
 	if err != nil {
 		return err
 	}

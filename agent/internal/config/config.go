@@ -15,6 +15,8 @@ type Config struct {
 	Proxy Proxy `yaml:"proxy"`
 	Envoy Envoy `yaml:"envoy"`
 
+	SessionManagerServerWorkerServiceAddr string `yaml:"sessionManagerServerWorkerServiceAddr"`
+
 	// HTTPPort is the port that the agent listens on for HTTP connections.
 	HTTPPort int `yaml:"httpPort"`
 }
@@ -33,6 +35,11 @@ func (c *Config) Validate() error {
 	if c.HTTPPort <= 0 {
 		return fmt.Errorf("httpPort must be greater than 0")
 	}
+
+	if c.SessionManagerServerWorkerServiceAddr == "" && c.Proxy.BaseURL == "" {
+		return fmt.Errorf("sessionManagerServerWorkerServiceAddr or proxy.BaseURL must be set")
+	}
+
 	return nil
 
 }
@@ -51,6 +58,7 @@ func (a *Admin) validate() error {
 
 // Proxy is the configuration for connecting to the proxy.
 type Proxy struct {
+	BaseURL string `yaml:"baseUrl"`
 	HTTP    Tunnel `yaml:"http"`
 	Upgrade Tunnel `yaml:"upgrade"`
 
@@ -69,14 +77,14 @@ func (p *Proxy) validate() error {
 
 // Tunnel is the configuration for a tunnel.
 type Tunnel struct {
-	URL         string        `yaml:"url"`
+	Path        string        `yaml:"path"`
 	PoolSize    int           `yaml:"poolSize"`
 	DialTimeout time.Duration `yaml:"dialTimeout"`
 }
 
 func (t *Tunnel) validate() error {
-	if t.URL == "" {
-		return fmt.Errorf("url must be set")
+	if t.Path == "" {
+		return fmt.Errorf("path must be set")
 	}
 	if t.PoolSize <= 0 {
 		return fmt.Errorf("poolSize must be greater than 0")

@@ -10,7 +10,8 @@ global:
 envoyClusterId: local-cluster-id
 
 proxy:
-  baseUrl: http://session-manager-server-worker-service-http:8082
+  # Deprecated. Use sessionManagerServerWorkerServiceAddr instead.
+  baseUrl:
   http:
     # pool size of the HTTP tunnel
     # Currently server supports only one channel per agent.
@@ -18,6 +19,9 @@ proxy:
   upgrade:
     # pool size of the HTTP upgrade tunnel
     poolSize: 10
+
+# This default value works if session-manager-server runs in the same namespace.
+sessionManagerServerWorkerServiceAddr: session-manager-server-worker-service-http:8082
 
 httpPort: 8080
 
