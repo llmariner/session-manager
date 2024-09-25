@@ -54,7 +54,7 @@ spec:
         - name: config
           mountPath: /var/run/config
           readOnly: true
-        {{- if .Values.tls.enable }}
+        {{- if or .Values.tls.enable .Values.workerServiceTls.enable }}
         - name: tls
           mountPath: /var/run/tls
           readOnly: true
@@ -77,8 +77,12 @@ spec:
       - name: config
         configMap:
           name: {{ include "session-manager-server.fullname" . }}
-      {{- if .Values.tls.enable }}
+      {{- if or .Values.tls.enable .Values.workerServiceTls.enable }}
       - name: tls
         secret:
+          {{- if .Values.tls.enable }}
           secretName: {{ .Values.tls.secretName }}
+          {{- else }}
+          secretName: {{ .Values.workerServiceTls.secretName }}
+          {{- end }}
       {{- end }}
