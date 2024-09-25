@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	rbacv1 "github.com/llm-operator/rbac-manager/api/v1"
-	"github.com/llm-operator/rbac-manager/pkg/auth"
+	rbacv1 "github.com/llmariner/rbac-manager/api/v1"
+	"github.com/llmariner/rbac-manager/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
