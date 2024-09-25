@@ -12,7 +12,7 @@ data:
     proxy:
       baseUrl {{ .Values.proxy.baseUrl }}
       http:
-	path /v1/sessions-worker-service/http
+        path /v1/sessions-worker-service/http
         poolSize: {{ $.Values.proxy.http.poolSize }}
         dialTimeout: 5s
       upgrade:
