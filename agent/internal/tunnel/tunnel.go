@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/llm-operator/rbac-manager/pkg/auth"
+	"github.com/llmariner/rbac-manager/pkg/auth"
 	"github.com/llm-operator/session-manager/common/pkg/common"
 	"k8s.io/klog/v2"
 )
