@@ -10,7 +10,7 @@ data:
     admin:
       socket: /tmp/sockets/admin.sock
     proxy:
-      baseUrl {{ .Values.proxy.baseUrl }}
+      baseUrl: {{ .Values.proxy.baseUrl }}
       http:
         path: /v1/sessions-worker-service/http
         poolSize: {{ $.Values.proxy.http.poolSize }}
