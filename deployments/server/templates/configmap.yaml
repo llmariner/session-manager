@@ -11,7 +11,7 @@ data:
     server:
       port: {{ .Values.httpPort }}
       agentPort: {{ .Values.workerServiceHttpPort }}
-      {{- if .Values.tls.enable }}
+      {{- if or .Values.tls.enable .Values.workerServiceTls.enable }}
       tls:
         cert: /var/run/tls/tls.crt
         key: /var/run/tls/tls.key

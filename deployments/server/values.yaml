@@ -24,7 +24,12 @@ workerServiceHttpService:
   externalTrafficPolicy:
   loadBalancerSourceRanges:
 
+# Deprecated. Use workerServiceTls instead.
 tls:
+  enable: false
+  secretName:
+
+workerServiceTls:
   enable: false
   secretName:
 
