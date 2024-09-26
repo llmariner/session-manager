@@ -12,10 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/llm-operator/common/pkg/certlib/store"
-	"github.com/llm-operator/session-manager/common/pkg/common"
-	"github.com/llm-operator/session-manager/server/internal/auth"
-	"github.com/llm-operator/session-manager/server/internal/proxy"
+	"github.com/llmariner/common/pkg/certlib/store"
+	"github.com/llmariner/session-manager/common/pkg/common"
+	"github.com/llmariner/session-manager/server/internal/auth"
+	"github.com/llmariner/session-manager/server/internal/proxy"
 	"k8s.io/klog/v2"
 )
 

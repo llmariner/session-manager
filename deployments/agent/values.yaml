@@ -41,7 +41,7 @@ readinessProbe:
   initialDelaySeconds: 5
 
 image:
-  repository: public.ecr.aws/cloudnatix/llm-operator/session-manager-agent
+  repository: public.ecr.aws/cloudnatix/llmariner/session-manager-agent
   pullPolicy: IfNotPresent
 
 podAnnotations:

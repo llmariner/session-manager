@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/llmariner/rbac-manager/pkg/auth"
-	"github.com/llm-operator/session-manager/common/pkg/common"
+	"github.com/llmariner/session-manager/common/pkg/common"
 	"k8s.io/klog/v2"
 )
 

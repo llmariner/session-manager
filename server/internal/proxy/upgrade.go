@@ -9,7 +9,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/llm-operator/session-manager/server/internal/flushwriter"
+	"github.com/llmariner/session-manager/server/internal/flushwriter"
 	"k8s.io/klog/v2"
 )
 

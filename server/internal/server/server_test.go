@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/llm-operator/session-manager/common/pkg/common"
-	"github.com/llm-operator/session-manager/server/internal/auth"
-	"github.com/llm-operator/session-manager/server/internal/proxy"
+	"github.com/llmariner/session-manager/common/pkg/common"
+	"github.com/llmariner/session-manager/server/internal/auth"
+	"github.com/llmariner/session-manager/server/internal/proxy"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -358,16 +358,16 @@ func TestServer_preflight(t *testing.T) {
 		upgradeProxy:          &fakeProxy{},
 		externalAuthenticator: &fakeAuthenticator{},
 		allowedOriginHosts: map[string]struct{}{
-			"app.staging.llm-operator.com": {},
-			"app.llm-operator.com":         {},
+			"app.staging.llmariner.com": {},
+			"app.llmariner.com":         {},
 		},
 	}
 
 	for _, origin := range []string{
 		"http://localhost",
-		"https://app.staging.llm-operator.com",
-		"https://app.llm-operator.com",
-		"https://app.staging.llm-operator.com:443",
+		"https://app.staging.llmariner.com",
+		"https://app.llmariner.com",
+		"https://app.staging.llmariner.com:443",
 	} {
 		t.Run(origin, func(t *testing.T) {
 			rh := http.Header{}
@@ -412,13 +412,13 @@ func TestServer_preflightNotAllowed(t *testing.T) {
 		upgradeProxy:          &fakeProxy{},
 		externalAuthenticator: &fakeAuthenticator{},
 		allowedOriginHosts: map[string]struct{}{
-			"app.staging.llm-operator.com": {},
-			"app.llm-operator.com":         {},
+			"app.staging.llmariner.com": {},
+			"app.llmariner.com":         {},
 		},
 	}
 
 	for _, origin := range []string{
-		"http://app.staging.llm-operator.com",
+		"http://app.staging.llmariner.com",
 		"https://example.com",
 		"",
 		"....",

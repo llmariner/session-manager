@@ -22,8 +22,8 @@ build-agent:
 
 .PHONY: build-docker-server
 build-docker-server:
-	docker build --build-arg TARGETARCH=amd64 -t llm-operator/session-manager-server:latest -f build/server/Dockerfile .
+	docker build --build-arg TARGETARCH=amd64 -t llmariner/session-manager-server:latest -f build/server/Dockerfile .
 
 .PHONY: build-docker-agent
 build-docker-agent:
-	docker build --build-arg TARGETARCH=amd64 -t llm-operator/session-manager-agent:latest -f build/agent/Dockerfile .
+	docker build --build-arg TARGETARCH=amd64 -t llmariner/session-manager-agent:latest -f build/agent/Dockerfile .
