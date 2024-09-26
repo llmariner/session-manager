@@ -1,10 +1,10 @@
-module github.com/llm-operator/session-manager
+module github.com/llmariner/session-manager
 
 go 1.22.2
 
 require (
 	github.com/coreos/go-oidc/v3 v3.10.0
-	github.com/llm-operator/common v0.4.0
+	github.com/llmariner/common v0.7.0
 	github.com/llmariner/rbac-manager v0.101.0
 	github.com/spf13/cobra v1.8.0
 	github.com/spf13/pflag v1.0.5

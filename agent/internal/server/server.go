@@ -1,8 +1,8 @@
 package server
 
 import (
-	"github.com/llm-operator/session-manager/agent/internal/admin"
-	"github.com/llm-operator/session-manager/agent/internal/tunnel"
+	"github.com/llmariner/session-manager/agent/internal/admin"
+	"github.com/llmariner/session-manager/agent/internal/tunnel"
 	"k8s.io/klog/v2"
 )
 

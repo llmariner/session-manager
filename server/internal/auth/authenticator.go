@@ -9,7 +9,7 @@ import (
 
 	rbacv1 "github.com/llmariner/rbac-manager/api/v1"
 	"github.com/llmariner/rbac-manager/pkg/auth"
-	"github.com/llm-operator/session-manager/common/pkg/common"
+	"github.com/llmariner/session-manager/common/pkg/common"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog/v2"

@@ -37,7 +37,7 @@ allowedOriginHosts:
 - localhost
 
 auth:
-  # These are the default values configured in https://github.com/llm-operator/rbac-manager/blob/main/deployments/dex-server/values.yaml#L43.
+  # These are the default values configured in https://github.com/llmariner/rbac-manager/blob/main/deployments/dex-server/values.yaml#L43.
   oidcClientId: session-manager
   oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
   cacheExpiration: 1m
@@ -48,7 +48,7 @@ dexServerAddr: dex-server-http:5556
 debugLog: false
 
 image:
-  repository: public.ecr.aws/cloudnatix/llm-operator/session-manager-server
+  repository: public.ecr.aws/cloudnatix/llmariner/session-manager-server
   pullPolicy: IfNotPresent
 
 replicaCount: 1

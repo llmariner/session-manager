@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/llm-operator/session-manager/server/internal/flushwriter"
+	"github.com/llmariner/session-manager/server/internal/flushwriter"
 	"golang.org/x/net/http2"
 	"k8s.io/klog/v2"
 )

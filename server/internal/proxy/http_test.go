@@ -36,7 +36,7 @@ func TestHTTPProxy(t *testing.T) {
 
 	// Proxy a request through the tunnel.
 	req, err := http.NewRequest(http.MethodGet, fmt.Sprintf("http://%s", key), nil)
-	origin := "https://app.staging.llm-operator.com"
+	origin := "https://app.staging.llmariner.com"
 	req.Header.Set(originHeaderName, origin)
 	assert.NoError(t, err)
 

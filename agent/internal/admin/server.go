@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/llm-operator/session-manager/agent/internal/tunnel"
-	"github.com/llm-operator/session-manager/common/pkg/common"
+	"github.com/llmariner/session-manager/agent/internal/tunnel"
+	"github.com/llmariner/session-manager/common/pkg/common"
 	"k8s.io/klog/v2"
 )
 
