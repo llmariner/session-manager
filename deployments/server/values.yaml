@@ -33,6 +33,14 @@ workerServiceTls:
   enable: false
   secretName:
 
+certifiate:
+  create: false
+  name:
+  dnsNames:
+  issuerRef:
+    kind: ClusterIssuer
+    name:
+
 allowedOriginHosts:
 - localhost
 
