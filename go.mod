@@ -1,6 +1,6 @@
 module github.com/llmariner/session-manager
 
-go 1.22.2
+go 1.23.1
 
 require (
 	github.com/coreos/go-oidc/v3 v3.10.0
