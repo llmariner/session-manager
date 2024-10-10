@@ -112,3 +112,8 @@ jobs:
       run: |
         helm package --version ${{ env.version }} ./deployments/agent
         helm push session-manager-agent-${{ env.version }}.tgz oci://public.ecr.aws/cloudnatix/llmariner-charts
+    - name: Create release
+      uses: softprops/action-gh-release@v2.0.8
+      with:
+        tag_name: v${{ env.version }}
+        generate_release_notes: true
