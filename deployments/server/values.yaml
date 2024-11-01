@@ -1,73 +1,228 @@
+# Default values for session-manager-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# +docs:section=Global
+
+# Global settings are used to share the values among LLMariner components.
+# session-manager-server is a dependency of LLMariner, so global values are
+# propagated at its installation.
+# Please see https://github.com/llmariner/llmariner/blob/main/deployments/llmariner.
 global:
-  auth:
-    enable: true
-    rbacInternalServerAddr:
-    dexServerAddr:
-
   ingress:
-    ingressClassName:
-    controllerUrl:
-    annotations:
-    tls:
-      hosts:
-      secretName:
+    # The Ingress class name.
+    ingressClassName: kong
 
+    # The URL of the ingress controller that can be accessed from
+    # outside the Kubernetes cluster. The session-manager-server use
+    # this for the auth token issuer and redirect URL.
+    controllerUrl: http://localhost:8080
+
+    # Optional additional annotations to add to the Ingress.
+    # +docs:property
+    # annotations: {}
+
+    # If specified, the API accessed via Ingress will be enabled for TLS.
+    # For more information, see [Enable TLS](https://llmariner.ai/docs/setup/install/single_cluster_production/#optional-enable-tls).
+    #
+    # For example:
+    # tls:
+    #   hosts:
+    #   - api.llm.mydomain.com
+    #   secretName: api-tls
+    # 
+    # +docs:property
+    # tls:
+    #   hosts: []
+    #   secretName: ""
+
+  # Manages the authentication and RBAC settings for the endpoints of
+  # the public and worker service APIs.
+  auth:
+    # The flag to enable auth.
+    enable: true
+    # The address for the rbac-server to use API auth.
+    rbacInternalServerAddr: rbac-server-internal-grpc:8082
+    # The address for the dex-server to use verify token.
+    dexServerAddr: dex-server-http:5556
+
+# +docs:section=Server
+
+# The HTTP port number for the public service.
+# +docs:type=number
 httpPort: 8080
+# The GRPC port number for the admin service.
+# +docs:type=number
 adminPort: 8081
+# The HTTP port number for the worker service.
+# +docs:type=number
 workerServiceHttpPort: 8082
 
+# Specify the Service resource settings for the HTTP worker service.
+# For more information, see [Service](srfi https://kubernetes.io/docs/concepts/services-networking/service),
+# and [Install across Multiple Clusters](https://llmariner.ai/docs/setup/install/multi_cluster_production/).
 workerServiceHttpService:
+  # The Service type.
   type: ClusterIP
+  # The number of HTTP incoming port.
   port: 8082
-  nodePort:
-  annotations:
-  externalTrafficPolicy:
-  loadBalancerSourceRanges:
+
+  # Optional node port number. If not specified, Kubernetes will
+  # allocate a port from a range. (default: 30000-32767)
+  # NOTE: This value is only available only when the Service type is `NodePort`.
+  # +docs:type=number
+  # +docs:property
+  # nodePort:
+
+  # Optional annotations to add to the worker Service.
+  # +docs:property
+  # annotations: {}
+
+  # Specify the policy to control how traffic from external sources
+  # is routed.
+  # +docs:enum=Cluster,Local
+  # +docs:property
+  # externalTrafficPolicy: ""
+
+  # Optional firewall rules to only allow certain source ranges.
+  # NOTE: This field will be ignored if the cloud-provider does not
+  # support the feature.
+  # +docs:property
+  # loadBalancerSourceRanges: []
+
+# Specify the TLS Secret used for communication with the worker.
+# For more information, see [Install across Multiple Clusters](https://llmariner.ai/docs/setup/install/multi_cluster_production/).
+workerServiceTls:
+  # If enabled, communicate with workers over TLS.
+  enable: false
+  # The secret name that is mounted to the pod.
+  secretName: session-tls
 
 # Deprecated. Use workerServiceTls instead.
+# +docs:hidden
 tls:
   enable: false
-  secretName:
+  secretName: ""
 
-workerServiceTls:
-  enable: false
-  secretName:
-
+# Specify the cert-manager Certificate resource settings.
+# To use this feature, you need to install cert-manager in advance. 
+# For more information, see [Install across Multiple Clusters](https://llmariner.ai/docs/setup/install/multi_cluster_production/),
+# and [Certificate resource](https://cert-manager.io/docs/usage/certificate/). 
 certificate:
+  # If enabled, the Certificate resource is created.
   create: false
-  name:
-  dnsNames:
-  issuerRef:
-    kind: ClusterIssuer
-    name:
+  # The Certificate name.
+  name: session-tls
 
+  # At least one of commonName (possibly through literalSubject),
+  # dnsNames, uris, emailAddresses, ipAddresses or otherNames is required.
+  # +docs:property
+  # dnsNames: ["my.dns.name"]
+
+  issuerRef:
+    # The identifier of the issuer.
+    # +docs:property
+    # name: "my-issuer-name"
+
+    # We can reference ClusterIssuers by changing the kind here.
+    # The default value is Issuer (i.e. a locally namespaced Issuer)
+    kind: ClusterIssuer
+
+# The list of allowed origin hosts.
+# These values are used for CORS preflight check.
 allowedOriginHosts:
 - localhost
 
+# The auth setting to verify request.
+# These are the default values configured in https://github.com/llmariner/rbac-manager/blob/main/deployments/dex-server/templates/configmap.yaml#L60-L62.
 auth:
-  # These are the default values configured in https://github.com/llmariner/rbac-manager/blob/main/deployments/dex-server/values.yaml#L43.
+  # the OIDC client ID.
   oidcClientId: session-manager
+  # the OIDC client secret.
   oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
+  # The valid period for the caching auth result.
   cacheExpiration: 1m
+  # The period for cleaning up the cash.
   cacheCleanup: 15m
 
-dexServerAddr: dex-server-http:5556
-
+# If enabled, show the debugging logs of the session-manager-server.
 debugLog: false
 
-image:
-  repository: public.ecr.aws/cloudnatix/llmariner/session-manager-server
-  pullPolicy: IfNotPresent
+# Override the "session-manager-server.fullname" value. This value is used
+# as part of most of the names of the resources created by this Helm chart.
+# +docs:property
+# fullnameOverride: "my-session-manager-server"
 
+# Override the "session-manager-server.name" value, which is used to annotate
+# some of the resources that are created by this Chart (using "app.kubernetes.io/name").
+# +docs:property
+# nameOverride: "my-session-manager-server"
+
+# The number of replicas for the session-manager-server Deployment.
+# +docs:type=number
 replicaCount: 1
 
-podAnnotations:
-nodeSelector:
-affinity:
-tolerations:
+# The container image of session-manager-server.
+image:
+  # The container image name.
+  repository: public.ecr.aws/cloudnatix/llmariner/session-manager-server
+  # Kubernetes imagePullPolicy on Deployment.
+  pullPolicy: IfNotPresent
 
-version:
+# Override the container image tag to deploy by setting this variable.
+# If no value is set, the chart's appVersion will be used.
+# +docs:property
+# version: vX.Y.Z
 
+# Optional additional annotations to add to the Deployment Pods.
+# +docs:property
+# podAnnotations: {}
+
+# The nodeSelector on Pods tells Kubernetes to schedule Pods on the
+# nodes with matching labels.
+# For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/).
+# +docs:property
+# nodeSelector: {}
+
+# A Kubernetes Affinity, if required.
+# For more information, see [Assigning Pods to Nodes](https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node).
+#
+# For example:
+#   affinity:
+#     nodeAffinity:
+#      requiredDuringSchedulingIgnoredDuringExecution:
+#        nodeSelectorTerms:
+#        - matchExpressions:
+#          - key: foo.bar.com/role
+#            operator: In
+#            values:
+#            - master
+#
+# +docs:property
+# affinity: {}
+
+# A list of Kubernetes Tolerations, if required.
+# For more information, see [Taints and Tolerations](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/).
+#
+# For example:
+#   tolerations:
+#   - key: foo.bar.com/role
+#     operator: Equal
+#     value: master
+#     effect: NoSchedule
+#
+# +docs:property
+# tolerations: []
+
+# Resources to provide to the session-manager-server pod.
+# For more information, see [Resource Management for Pods and Containers](https://kubernetes.io/docs/concepts/configuration/manage-resources-Containers/).
+#
+# For example:
+#  requests:
+#    cpu: 10m
+#    memory: 32Mi
+#
+# +docs:property
 resources:
   requests:
     cpu: "250m"
@@ -75,8 +230,15 @@ resources:
   limits:
     cpu: "250m"
 
+# Security Context for the session-manager-server pod.
+# For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
+# +docs:property
 podSecurityContext:
   fsGroup: 2000
+
+# Security Context for the session-manager-server container.
+# For more information, see [Configure a Security Context for a Pod or Container](https://kubernetes.io/docs/tasks/configure-pod-container/security-context/).
+# +docs:property
 securityContext:
   readOnlyRootFilesystem: true
   capabilities:
@@ -84,3 +246,13 @@ securityContext:
     - ALL
   runAsNonRoot: true
   runAsUser: 1000
+
+# Additional volumes to add to the session-manager-server pod.
+# For more information, see [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/).
+# +docs:property
+# volumes: []
+
+# Additional volume mounts to add to the session-manager-server container.
+# For more information, see [Volumes](https://kubernetes.io/docs/concepts/storage/volumes/).
+# +docs:property
+# volumeMounts: []

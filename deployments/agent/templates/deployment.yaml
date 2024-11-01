@@ -64,7 +64,7 @@ spec:
         - envoy
         - --config-path
         - /tmp/envoy/envoy.yaml
-        {{- if .Values.debug | default false | eq true }}
+        {{- if .Values.debugLogging | default false | eq true }}
         - --log-level
         - trace
         {{- end }}
@@ -81,6 +81,9 @@ spec:
           readOnly: true
         - name: sockets
           mountPath: /tmp/sockets
+        {{- with .Values.volumeMounts }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
       {{- with .Values.nodeSelector }}
@@ -101,3 +104,6 @@ spec:
           name: {{ include "session-manager-agent.fullname" . }}
       - name: sockets
         emptyDir: {}
+      {{- with .Values.volumes }}
+      {{- toYaml . | nindent 6 }}
+      {{- end }}
