@@ -72,7 +72,7 @@ func NewExternalAuthenticator(
 		intercepter:    i,
 		rbacClient:     rbacv1.NewRbacInternalServiceClient(conn),
 		tokenExchanger: tex,
-		loginCache:     newCacheWithCleaner(ctx, cacheExpiration, cacheExpiration),
+		loginCache:     newCacheWithCleaner(ctx, cacheExpiration, cacheCleanup),
 	}, nil
 }
 
