@@ -59,7 +59,7 @@ adminPort: 8081
 workerServiceHttpPort: 8082
 
 # Specify the Service resource settings for the HTTP worker service.
-# For more information, see [Service](srfi https://kubernetes.io/docs/concepts/services-networking/service),
+# For more information, see [Service](https://kubernetes.io/docs/concepts/services-networking/service),
 # and [Install across Multiple Clusters](https://llmariner.ai/docs/setup/install/multi_cluster_production/).
 workerServiceHttpService:
   # The Service type.
