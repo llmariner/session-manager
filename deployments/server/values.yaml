@@ -30,7 +30,7 @@ global:
     #   hosts:
     #   - api.llm.mydomain.com
     #   secretName: api-tls
-    # 
+    #
     # +docs:property
     # tls:
     #   hosts: []
@@ -105,9 +105,9 @@ tls:
   secretName: ""
 
 # Specify the cert-manager Certificate resource settings.
-# To use this feature, you need to install cert-manager in advance. 
+# To use this feature, you need to install cert-manager in advance.
 # For more information, see [Install across Multiple Clusters](https://llmariner.ai/docs/setup/install/multi_cluster_production/),
-# and [Certificate resource](https://cert-manager.io/docs/usage/certificate/). 
+# and [Certificate resource](https://cert-manager.io/docs/usage/certificate/).
 certificate:
   # If enabled, the Certificate resource is created.
   create: false
@@ -261,4 +261,5 @@ securityContext:
 # This definition is only here as a placeholder such that it is
 # included in the json schema.
 # +docs:hidden
-enable: true
+# +docs:property
+# enable: true
