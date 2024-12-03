@@ -21,10 +21,16 @@ data:
         dialTimeout: 5s
       tls:
         enable: {{ .Values.global.worker.tls.enable }}
-    sessionManagerServerWorkerServiceAddr: {{ .Values.sessionManagerServerWorkerServiceAddr }}
+    sessionManagerServerWorkerServiceAddr: {{ .Values.global.worker.controlPlaneAddr | default .Values.sessionManagerServerWorkerServiceAddr }}
     envoy:
       socket: /tmp/sockets/envoy.sock
     httpPort: {{ .Values.httpPort }}
+    componentStatusSender:
+      enable: {{ .Values.componentStatusSender.enable }}
+      name: {{ .Values.componentStatusSender.name }}
+      initialDelay: {{ .Values.componentStatusSender.initialDelay }}
+      interval: {{ .Values.componentStatusSender.interval }}
+      clusterManagerServerWorkerServiceAddr: {{ .Values.global.worker.controlPlaneAddr | default .Values.componentStatusSender.clusterManagerServerWorkerServiceAddr }}
 
   envoy.yaml: |
     node:

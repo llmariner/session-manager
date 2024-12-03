@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/llmariner/cluster-manager/pkg/status"
 	"gopkg.in/yaml.v3"
 	"k8s.io/klog/v2"
 )
@@ -19,6 +20,9 @@ type Config struct {
 
 	// HTTPPort is the port that the agent listens on for HTTP connections.
 	HTTPPort int `yaml:"httpPort"`
+
+	// ComponentStatusSender is the configuration for the component status sender.
+	ComponentStatusSender status.Config `yaml:"componentStatusSender"`
 }
 
 // Validate validates the configuration.
@@ -38,6 +42,10 @@ func (c *Config) Validate() error {
 
 	if c.SessionManagerServerWorkerServiceAddr == "" && c.Proxy.BaseURL == "" {
 		return fmt.Errorf("sessionManagerServerWorkerServiceAddr or proxy.BaseURL must be set")
+	}
+
+	if err := c.ComponentStatusSender.Validate(); err != nil {
+		return fmt.Errorf("componentStatusSender: %s", err)
 	}
 
 	return nil
