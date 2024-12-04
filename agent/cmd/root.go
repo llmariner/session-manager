@@ -2,11 +2,16 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 
+	"github.com/go-logr/logr"
+	"github.com/go-logr/stdr"
+	"github.com/llmariner/cluster-manager/pkg/status"
 	"github.com/llmariner/session-manager/agent/internal/admin"
 	"github.com/llmariner/session-manager/agent/internal/config"
 	"github.com/llmariner/session-manager/agent/internal/health"
@@ -14,6 +19,9 @@ import (
 	"github.com/llmariner/session-manager/agent/internal/tunnel"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/credentials/insecure"
 	"k8s.io/klog/v2"
 )
 
@@ -35,6 +43,8 @@ var rootCmd = &cobra.Command{
 
 func run(ctx context.Context, c *config.Config) error {
 	errC := make(chan error)
+
+	logger := stdr.New(log.Default())
 
 	// HTTP tunnel.
 	baseURL := c.Proxy.BaseURL
@@ -111,6 +121,17 @@ func run(ctx context.Context, c *config.Config) error {
 		}
 	}()
 
+	// Component Status sender.
+	if c.ComponentStatusSender.Enable {
+		go func() {
+			ss, err := status.NewBeaconSender(c.ComponentStatusSender, grpcOption(c), logger)
+			if err != nil {
+				errC <- err
+			}
+			ss.Run(logr.NewContext(ctx, logger))
+		}()
+	}
+
 	return <-errC
 }
 
@@ -123,4 +144,11 @@ func init() {
 	rootCmd.Flags().String("config", "", "Path to configuration file")
 	_ = rootCmd.MarkFlagRequired("config")
 	rootCmd.SilenceUsage = true
+}
+
+func grpcOption(c *config.Config) grpc.DialOption {
+	if c.Proxy.TLS.Enable {
+		return grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{}))
+	}
+	return grpc.WithTransportCredentials(insecure.NewCredentials())
 }

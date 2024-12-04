@@ -26,6 +26,11 @@ global:
       # The flag to enable TLS access to the control-plane.
       enable: false
 
+    # If specified, use this address for accessing the control-plane.
+    # This is necessary when installing LLMariner in a multi-cluster mode.
+    # For more information, see [Install across Multiple Clusters](https://llmariner.ai/docs/setup/install/multi_cluster_production/).
+    controlPlaneAddr: ""
+
 # +docs:section=Agent
 
 # The HTTP port number.
@@ -37,6 +42,18 @@ envoyClusterId: local-cluster-id
 
 # This default value works if session-manager-server runs in the same namespace.
 sessionManagerServerWorkerServiceAddr: session-manager-server-worker-service-http:8082
+
+componentStatusSender:
+  # The flag to enable the component status sender.
+  enable : true
+  # The name of the component.
+  name: session-manager-agent
+  # initialDelay is the time to wait before starting the sender.
+  initialDelay: 1m
+  # The interval time to send the component status.
+  interval: 15m
+  # The address of the cluster-manager-server to call worker services.
+  clusterManagerServerWorkerServiceAddr: cluster-manager-server-worker-service-grpc:8082
 
 proxy:
   # Deprecated. Use sessionManagerServerWorkerServiceAddr instead.
