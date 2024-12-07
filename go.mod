@@ -6,7 +6,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.10.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-logr/stdr v1.2.2
-	github.com/llmariner/cluster-manager v1.4.0
+	github.com/llmariner/cluster-manager v1.5.1
 	github.com/llmariner/common v0.15.0
 	github.com/llmariner/rbac-manager v1.3.0
 	github.com/spf13/cobra v1.8.1
