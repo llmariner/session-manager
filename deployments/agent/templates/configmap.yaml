@@ -21,7 +21,7 @@ data:
         dialTimeout: 5s
       tls:
         enable: {{ .Values.global.worker.tls.enable }}
-    sessionManagerServerWorkerServiceAddr: {{ .Values.global.worker.controlPlaneAddr | default .Values.sessionManagerServerWorkerServiceAddr }}
+    sessionManagerServerWorkerServiceAddr: {{ .Values.sessionManagerServerWorkerServiceAddr }}
     envoy:
       socket: /tmp/sockets/envoy.sock
     httpPort: {{ .Values.httpPort }}
