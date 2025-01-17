@@ -39,6 +39,18 @@ type reqIntercepter interface {
 	InterceptHTTPRequest(req *http.Request) (int, auth.UserInfo, error)
 }
 
+// NoopAuthenticator does not authenticate requests.
+type NoopAuthenticator struct{}
+
+// Authenticate implements Authenticator by returning an empty string.
+func (a *NoopAuthenticator) Authenticate(r *http.Request) (string, string, error) {
+	route, ok := extractRoute(r.URL.Path)
+	if !ok {
+		return "default", r.URL.Path, nil
+	}
+	return route.clusterID, route.path, nil
+}
+
 // ExternalAuthenticator authenticates external requests with RBAC server.
 type ExternalAuthenticator struct {
 	intercepter    reqIntercepter
