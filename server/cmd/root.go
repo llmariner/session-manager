@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/http"
 
 	"github.com/llmariner/session-manager/server/internal/admin"
 	"github.com/llmariner/session-manager/server/internal/auth"
@@ -37,25 +38,45 @@ func run(ctx context.Context, c *config.Config) error {
 	upgradeProxy := proxy.NewUpgradeProxy()
 	httpProxy.SetObserver(upgradeProxy)
 
-	wauth, err := auth.NewWorkerAuthenticator(ctx, c.Server.Auth.RBACServer.Addr)
-	if err != nil {
-		return fmt.Errorf("new worker authenticator: %w", err)
+	var wauth auth.Authenticator
+	if c.Server.Auth.RBACServer != nil {
+		wa, err := auth.NewWorkerAuthenticator(ctx, c.Server.Auth.RBACServer.Addr)
+		if err != nil {
+			return fmt.Errorf("new worker authenticator: %w", err)
+		}
+		wauth = wa
+	} else {
+		wauth = &auth.NoopAuthenticator{}
 	}
 
-	tex, err := auth.NewTokenExchanger(ctx, auth.TokenExchangerOptions{
-		ClientID:     c.Server.Auth.OIDC.ClientID,
-		ClientSecret: c.Server.Auth.OIDC.ClientSecret,
-		IssuerURL:    c.Server.Auth.OIDC.IssuerURL,
-		RedirectURI:  c.Server.Auth.OIDC.RedirectURI,
+	var (
+		eauth      auth.Authenticator
+		loginFn    http.HandlerFunc
+		callbackFn http.HandlerFunc
+	)
+	if c.Server.Auth.DexServer != nil {
+		tex, err := auth.NewTokenExchanger(ctx, auth.TokenExchangerOptions{
+			ClientID:     c.Server.Auth.OIDC.ClientID,
+			ClientSecret: c.Server.Auth.OIDC.ClientSecret,
+			IssuerURL:    c.Server.Auth.OIDC.IssuerURL,
+			RedirectURI:  c.Server.Auth.OIDC.RedirectURI,
 
-		DexServerAddr: c.Server.Auth.DexServer.Addr,
-	})
-	if err != nil {
-		return fmt.Errorf("new token exchanger: %w", err)
-	}
-	eauth, err := auth.NewExternalAuthenticator(ctx, c.Server.Auth.RBACServer.Addr, tex, c.Server.Auth.CacheExpiration, c.Server.Auth.CacheCleanup)
-	if err != nil {
-		return fmt.Errorf("new worker authenticator: %w", err)
+			DexServerAddr: c.Server.Auth.DexServer.Addr,
+		})
+		if err != nil {
+			return fmt.Errorf("new token exchanger: %w", err)
+		}
+		ea, err := auth.NewExternalAuthenticator(ctx, c.Server.Auth.RBACServer.Addr, tex, c.Server.Auth.CacheExpiration, c.Server.Auth.CacheCleanup)
+		if err != nil {
+			return fmt.Errorf("new worker authenticator: %w", err)
+		}
+		eauth = ea
+		loginFn = ea.HandleLogin
+		callbackFn = ea.HandleLoginCallback
+	} else {
+		eauth = &auth.NoopAuthenticator{}
+		loginFn = func(w http.ResponseWriter, r *http.Request) {}
+		callbackFn = func(w http.ResponseWriter, r *http.Request) {}
 	}
 
 	s := server.NewServer(server.Opts{
@@ -63,8 +84,8 @@ func run(ctx context.Context, c *config.Config) error {
 		UpgradeProxy:          upgradeProxy,
 		AgentAuthenticator:    wauth,
 		ExternalAuthenticator: eauth,
-		LoginFunc:             eauth.HandleLogin,
-		LoginCallBackFunc:     eauth.HandleLoginCallback,
+		LoginFunc:             loginFn,
+		LoginCallBackFunc:     callbackFn,
 		AllowedOriginHosts:    c.Server.GetAllowedOriginHosts(),
 	})
 
@@ -103,11 +124,11 @@ func run(ctx context.Context, c *config.Config) error {
 	}()
 
 	// Await first error.
+	var err error
 	select {
 	case err = <-errS:
 	case err = <-errAdminS:
 	}
-
 	return err
 
 }
