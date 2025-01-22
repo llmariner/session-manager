@@ -221,8 +221,30 @@ func TestExtractRoute(t *testing.T) {
 			path: "/v1/sessions/my-cluster/api/v1/namespaces/my-namespace/pods",
 			want: route{
 				clusterID: "my-cluster",
-				namespace: "my-namespace",
-				path:      "/api/v1/namespaces/my-namespace/pods",
+				apiServerRoute: &apiServerRoute{
+					namespace: "my-namespace",
+				},
+				path: "/api/v1/namespaces/my-namespace/pods",
+			},
+			wantOK: true,
+		},
+		{
+			path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+			want: route{
+				clusterID: "my-cluster",
+				ingressRoute: &ingressRoute{
+					service: "notebooks/nid",
+				},
+				path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+			},
+			wantOK: true,
+		},
+		{
+			path: "/v1/sessions/my-cluster/slurm/v0.0.41/jobs/",
+			want: route{
+				clusterID:  "my-cluster",
+				slurmRoute: &slurmRoute{},
+				path:       "/slurm/v0.0.41/jobs/",
 			},
 			wantOK: true,
 		},

@@ -71,6 +71,15 @@ proxy:
     # +docs:type=number
     poolSize: 10
 
+  slurm:
+    # Enable request routing to Slurm control plane.
+    enable: false
+    # The address of the REST endpoint of Slurm control plane.
+    controlPlaneAddress: ""
+    # The port number of the REST endpoint of Slurm control plane.
+    # +docs:type=number
+    controlPlanePort: 6820
+
 # If enabled, show the debugging logs of the session-manager-agent.
 debugLogging: true
 

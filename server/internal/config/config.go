@@ -37,6 +37,8 @@ type Server struct {
 	TLS *TLS `yaml:"tls"`
 	// AllowedOriginHosts is a slice of Origin hosts that we allow in CORS preflight check.
 	AllowedOriginHosts []string `yaml:"allowedOriginHosts"`
+
+	Slurm Slurm `yaml:"slurm"`
 }
 
 func (s *Server) validate() error {
@@ -180,6 +182,11 @@ func (c *TLS) validate() error {
 		return fmt.Errorf("cert must be set")
 	}
 	return nil
+}
+
+// Slurm is the configuration for Slurm.
+type Slurm struct {
+	Enable bool `yaml:"enable"`
 }
 
 // Parse parses a configuration file at the given path and returns a Config
