@@ -57,6 +57,7 @@ type ExternalAuthenticator struct {
 	rbacClient     rbacv1.RbacInternalServiceClient
 	tokenExchanger *TokenExchanger
 	loginCache     *cache
+	enableSlurm    bool
 }
 
 // NewExternalAuthenticator returns a new ExternalAuthenticator.
@@ -65,6 +66,7 @@ func NewExternalAuthenticator(
 	rbacServerAddr string,
 	tex *TokenExchanger,
 	cacheExpiration, cacheCleanup time.Duration,
+	enableSlurm bool,
 ) (*ExternalAuthenticator, error) {
 	i, err := auth.NewInterceptor(ctx, auth.Config{
 		RBACServerAddr: rbacServerAddr,
@@ -85,6 +87,7 @@ func NewExternalAuthenticator(
 		rbacClient:     rbacv1.NewRbacInternalServiceClient(conn),
 		tokenExchanger: tex,
 		loginCache:     newCacheWithCleaner(ctx, cacheExpiration, cacheCleanup),
+		enableSlurm:    enableSlurm,
 	}, nil
 }
 
@@ -150,31 +153,57 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 		return "", "", ErrUnauthorized
 	}
 
-	if route.isIngress {
+	switch {
+	case route.ingressRoute != nil:
 		if err := a.authenticateService(r, route); err != nil {
 			return "", "", err
 		}
 		return route.clusterID, route.path, nil
-	}
 
-	_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
-	if err != nil {
-		return "", "", ErrUnauthorized
-	}
-
-	var found bool
-	for _, kenv := range userInfo.AssignedKubernetesEnvs {
-		if kenv.ClusterID == route.clusterID && kenv.Namespace == route.namespace {
-			found = true
-			break
+	case route.apiServerRoute != nil:
+		_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
+		if err != nil {
+			return "", "", ErrUnauthorized
 		}
-	}
 
-	if !found {
-		return "", "", ErrUnauthorized
-	}
+		var found bool
+		for _, kenv := range userInfo.AssignedKubernetesEnvs {
+			if kenv.ClusterID == route.clusterID && kenv.Namespace == route.apiServerRoute.namespace {
+				found = true
+				break
+			}
+		}
 
-	return route.clusterID, route.path, nil
+		if !found {
+			return "", "", ErrUnauthorized
+		}
+
+		return route.clusterID, route.path, nil
+
+	case route.slurmRoute != nil && a.enableSlurm:
+		_, userInfo, err := a.intercepter.InterceptHTTPRequest(r)
+		if err != nil {
+			return "", "", ErrUnauthorized
+		}
+
+		// Just check the cluster assignment and do not check the namespace.
+		var found bool
+		for _, kenv := range userInfo.AssignedKubernetesEnvs {
+			if kenv.ClusterID == route.clusterID {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			return "", "", ErrUnauthorized
+		}
+
+		return route.clusterID, route.path, nil
+
+	default:
+		return "", "", fmt.Errorf("auth: unexpected route: %+v", route)
+	}
 }
 
 func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route) error {
@@ -186,7 +215,7 @@ func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route
 	token := cookie.Value
 
 	v, ok := a.loginCache.get(token)
-	if ok && v == route.service {
+	if ok && v == route.ingressRoute.service {
 		// NOTE: we should check if token is still valid, but we're not doing that here.
 		// Cache expiration should set short enough to take care of this.
 		return nil
@@ -203,7 +232,7 @@ func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route
 		return ErrLoginRequired
 	}
 
-	a.loginCache.set(token, route.service)
+	a.loginCache.set(token, route.ingressRoute.service)
 	return nil
 }
 
@@ -239,13 +268,24 @@ func (a *WorkerAuthenticator) Authenticate(r *http.Request) (string, string, err
 	return clusterInfo.ClusterID, r.URL.Path, nil
 }
 
+type IngressRoute struct {
+	service string
+}
+
+type apiServerRoute struct {
+	namespace string
+}
+
+type slurmRoute struct {
+}
+
 type route struct {
 	clusterID string
 	path      string
 
-	isIngress bool
-	service   string
-	namespace string
+	ingressRoute   *IngressRoute
+	apiServerRoute *apiServerRoute
+	slurmRoute     *slurmRoute
 }
 
 func extractRoute(origPath string) (route, bool) {
@@ -262,9 +302,10 @@ func extractRoute(origPath string) (route, bool) {
 	if s[4] == "v1" && s[5] == "services" {
 		return route{
 			clusterID: clusterID,
-			isIngress: true,
-			// e.g., notebooks/<notebook ID>
-			service: fmt.Sprintf("%s/%s", s[6], s[7]),
+			ingressRoute: &IngressRoute{
+				// e.g., notebooks/<notebook ID>
+				service: fmt.Sprintf("%s/%s", s[6], s[7]),
+			},
 			// It is natural to truncate "/v1/sessions/<cluster ID>" when
 			// forwarding the request, but we're not doing that here since
 			// it does not work well with Jupyter Notebook.
@@ -281,12 +322,20 @@ func extractRoute(origPath string) (route, bool) {
 			return route{}, false
 		}
 		namespace = s[8]
+	case "slurm":
+		return route{
+			clusterID:  clusterID,
+			slurmRoute: &slurmRoute{},
+			path:       "/" + strings.Join(s[4:], "/"),
+		}, true
 	default:
 		return route{}, false
 	}
 	return route{
 		clusterID: clusterID,
-		namespace: namespace,
-		path:      "/" + strings.Join(s[4:], "/"),
+		apiServerRoute: &apiServerRoute{
+			namespace: namespace,
+		},
+		path: "/" + strings.Join(s[4:], "/"),
 	}, true
 }

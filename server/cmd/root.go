@@ -66,7 +66,14 @@ func run(ctx context.Context, c *config.Config) error {
 		if err != nil {
 			return fmt.Errorf("new token exchanger: %w", err)
 		}
-		ea, err := auth.NewExternalAuthenticator(ctx, c.Server.Auth.RBACServer.Addr, tex, c.Server.Auth.CacheExpiration, c.Server.Auth.CacheCleanup)
+		ea, err := auth.NewExternalAuthenticator(
+			ctx,
+			c.Server.Auth.RBACServer.Addr,
+			tex,
+			c.Server.Auth.CacheExpiration,
+			c.Server.Auth.CacheCleanup,
+			c.Server.Slurm.Enable,
+		)
 		if err != nil {
 			return fmt.Errorf("new worker authenticator: %w", err)
 		}

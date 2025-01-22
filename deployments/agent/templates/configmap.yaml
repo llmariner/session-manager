@@ -94,6 +94,14 @@ data:
                       cluster: services
                       idle_timeout: 0s
                       timeout: 0s
+                 {{- if .Values.proxy.slurm.enable }}
+                  - match:
+                      prefix: "/slurm"
+                    route:
+                      cluster: slurm
+                      idle_timeout: 0s
+                      timeout: 0s
+                 {{- end }}
               http_filters:
               - name: envoy.filters.http.lua
                 typed_config:
@@ -191,3 +199,20 @@ data:
              dns_cache_config:
                name: dynamic_forward_proxy_cache_config
                dns_lookup_family: V4_ONLY
+      {{- with .Values.proxy.slurm }}
+      {{- if .enable }}
+      - name: slurm
+        connect_timeout: 0.25s
+        type: STRICT_DNS
+        load_assignment:
+          cluster_name: slurm
+          endpoints:
+          - lb_endpoints:
+            - endpoint:
+                address:
+                  socket_address:
+                    address: {{ .controlPlaneAddress }}
+                    port_value: {{ .controlPlanePort }}
+      # TODO(kenji): Support TLS.
+      {{- end }}
+      {{- end }}

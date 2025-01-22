@@ -34,3 +34,5 @@ data:
       allowedOriginHosts:
       {{- toYaml . | nindent 6 }}
       {{- end }}
+      slurm:
+        enable: {{ .Values.slurm.enable }}

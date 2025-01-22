@@ -145,6 +145,10 @@ auth:
   # The period for cleaning up the cash.
   cacheCleanup: 15m
 
+slurm:
+  # Enable request routing to Slurm control plane.
+  enable: false
+
 # If enabled, show the debugging logs of the session-manager-server.
 debugLog: false
 
