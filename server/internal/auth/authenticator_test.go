@@ -232,7 +232,7 @@ func TestExtractRoute(t *testing.T) {
 			path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
 			want: route{
 				clusterID: "my-cluster",
-				ingressRoute: &IngressRoute{
+				ingressRoute: &ingressRoute{
 					service: "notebooks/nid",
 				},
 				path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",

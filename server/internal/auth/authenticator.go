@@ -268,7 +268,7 @@ func (a *WorkerAuthenticator) Authenticate(r *http.Request) (string, string, err
 	return clusterInfo.ClusterID, r.URL.Path, nil
 }
 
-type IngressRoute struct {
+type ingressRoute struct {
 	service string
 }
 
@@ -283,7 +283,7 @@ type route struct {
 	clusterID string
 	path      string
 
-	ingressRoute   *IngressRoute
+	ingressRoute   *ingressRoute
 	apiServerRoute *apiServerRoute
 	slurmRoute     *slurmRoute
 }
@@ -302,7 +302,7 @@ func extractRoute(origPath string) (route, bool) {
 	if s[4] == "v1" && s[5] == "services" {
 		return route{
 			clusterID: clusterID,
-			ingressRoute: &IngressRoute{
+			ingressRoute: &ingressRoute{
 				// e.g., notebooks/<notebook ID>
 				service: fmt.Sprintf("%s/%s", s[6], s[7]),
 			},
