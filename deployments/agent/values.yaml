@@ -78,7 +78,7 @@ proxy:
     controlPlaneAddress: ""
     # The port number of the REST endpoint of Slurm control plane.
     # +docs:type=number
-    controlPlanePort:
+    controlPlanePort: 6820
 
 # If enabled, show the debugging logs of the session-manager-agent.
 debugLogging: true
