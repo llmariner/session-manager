@@ -77,6 +77,23 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			wantErr: ErrUnauthorized,
 		},
 		{
+			name: "cluster scope",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/v1/sessions/my-cluster/api/v1/pods",
+				},
+			},
+			userInfo: auth.UserInfo{
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
+			},
+			wantErr: ErrUnauthorized,
+		},
+		{
 			name: "invalid path",
 			req: &http.Request{
 				URL: &url.URL{
@@ -245,6 +262,28 @@ func TestExtractRoute(t *testing.T) {
 				clusterID:  "my-cluster",
 				slurmRoute: &slurmRoute{},
 				path:       "/slurm/v0.0.41/jobs/",
+			},
+			wantOK: true,
+		},
+		{
+			path: "/v1/sessions/my-cluster/api/v1/pods",
+			want: route{
+				clusterID: "my-cluster",
+				path:      "/api/v1/pods",
+				apiServerRoute: &apiServerRoute{
+					clusterScope: true,
+				},
+			},
+			wantOK: true,
+		},
+		{
+			path: "/v1/sessions/my-cluster/apis/batch/v1/jobs",
+			want: route{
+				clusterID: "my-cluster",
+				path:      "/apis/batch/v1/jobs",
+				apiServerRoute: &apiServerRoute{
+					clusterScope: true,
+				},
 			},
 			wantOK: true,
 		},

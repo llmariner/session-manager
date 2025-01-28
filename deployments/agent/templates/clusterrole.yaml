@@ -35,6 +35,9 @@ rules:
   resources:
   - jobs
   verbs:
+  - get
+  - list
+  - watch
   - create
   - patch
   - delete
