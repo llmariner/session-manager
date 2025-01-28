@@ -166,6 +166,11 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 			return "", "", ErrUnauthorized
 		}
 
+		// TODO(aya): support cluster scope.
+		if route.apiServerRoute.clusterScope {
+			return "", "", ErrUnauthorized
+		}
+
 		var found bool
 		for _, kenv := range userInfo.AssignedKubernetesEnvs {
 			if kenv.ClusterID == route.clusterID && kenv.Namespace == route.apiServerRoute.namespace {
@@ -273,7 +278,8 @@ type ingressRoute struct {
 }
 
 type apiServerRoute struct {
-	namespace string
+	namespace    string
+	clusterScope bool
 }
 
 type slurmRoute struct {
@@ -294,7 +300,7 @@ func extractRoute(origPath string) (route, bool) {
 	}
 
 	s := strings.Split(origPath, "/")
-	if len(s) < 7 {
+	if len(s) < 5 {
 		return route{}, false
 	}
 	clusterID := s[3]
@@ -316,12 +322,13 @@ func extractRoute(origPath string) (route, bool) {
 	var namespace string
 	switch s[4] {
 	case "api":
-		namespace = s[7]
-	case "apis":
-		if len(s) < 8 {
-			return route{}, false
+		if len(s) > 7 {
+			namespace = s[7]
 		}
-		namespace = s[8]
+	case "apis":
+		if len(s) > 8 {
+			namespace = s[8]
+		}
 	case "slurm":
 		return route{
 			clusterID:  clusterID,
@@ -331,11 +338,16 @@ func extractRoute(origPath string) (route, bool) {
 	default:
 		return route{}, false
 	}
-	return route{
-		clusterID: clusterID,
-		apiServerRoute: &apiServerRoute{
-			namespace: namespace,
-		},
-		path: "/" + strings.Join(s[4:], "/"),
-	}, true
+
+	route := route{
+		clusterID:      clusterID,
+		apiServerRoute: &apiServerRoute{},
+		path:           "/" + strings.Join(s[4:], "/"),
+	}
+	if namespace != "" {
+		route.apiServerRoute.namespace = namespace
+	} else {
+		route.apiServerRoute.clusterScope = true
+	}
+	return route, true
 }
