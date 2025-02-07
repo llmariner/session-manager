@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -71,7 +72,13 @@ func NewExternalAuthenticator(
 	i, err := auth.NewInterceptor(ctx, auth.Config{
 		RBACServerAddr: rbacServerAddr,
 		// TODO(kenji): Revisit.
-		AccessResource: "api.fine_tuning.jobs",
+		GetAccessResourceForHTTPRequest: func(method string, url url.URL) string {
+			part := strings.Split(url.Path, "/")
+			if n := len(part); n <= 7 && (part[4] == "api" || part[4] == "apis") {
+				return "api.k8s.clusterscope"
+			}
+			return "api.fine_tuning.jobs"
+		},
 	})
 	if err != nil {
 		return nil, err
@@ -166,14 +173,11 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 			return "", "", ErrUnauthorized
 		}
 
-		// TODO(aya): support cluster scope.
-		if route.apiServerRoute.clusterScope {
-			return "", "", ErrUnauthorized
-		}
-
 		var found bool
 		for _, kenv := range userInfo.AssignedKubernetesEnvs {
-			if kenv.ClusterID == route.clusterID && kenv.Namespace == route.apiServerRoute.namespace {
+			if kenv.ClusterID == route.clusterID &&
+				(route.apiServerRoute.clusterScope ||
+					kenv.Namespace == route.apiServerRoute.namespace) {
 				found = true
 				break
 			}
