@@ -91,7 +91,9 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 					},
 				},
 			},
-			wantErr: ErrUnauthorized,
+			wantClusterID: "my-cluster",
+			wantPath:      "/api/v1/pods",
+			wantErr:       nil,
 		},
 		{
 			name: "invalid path",
