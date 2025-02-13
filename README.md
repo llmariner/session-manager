@@ -10,4 +10,6 @@ cluster can be in a private network that is not accessible from
 outside. `session-manager-agent` initializes an outgoing connection to
 `session-manager-server` to establish the session.
 
-TODO(kenji): Add a diagram
+<p align="center">
+  <img src="./docs/development/architecture.png" width=80%>
+</p>
