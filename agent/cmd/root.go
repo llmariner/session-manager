@@ -12,6 +12,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/go-logr/stdr"
 	"github.com/llmariner/cluster-manager/pkg/status"
+	"github.com/llmariner/rbac-manager/pkg/auth"
 	"github.com/llmariner/session-manager/agent/internal/admin"
 	"github.com/llmariner/session-manager/agent/internal/config"
 	"github.com/llmariner/session-manager/agent/internal/health"
@@ -45,6 +46,10 @@ func run(ctx context.Context, c *config.Config) error {
 	errC := make(chan error)
 
 	logger := stdr.New(log.Default())
+
+	if err := auth.ValidateClusterRegistrationKey(); err != nil {
+		return err
+	}
 
 	// HTTP tunnel.
 	baseURL := c.Proxy.BaseURL
