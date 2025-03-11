@@ -20,10 +20,8 @@ data:
         {{- if .Values.global.auth.enable }}
         rbacServer:
           addr: {{ .Values.global.auth.rbacInternalServerAddr }}
-        {{- with .Values.global.auth.dexServerAddr }}
         dexServer:
-          addr: {{ . }}
-        {{- end }}
+          addr: {{ .Values.global.auth.dexServerAddr }}
         oidc:
           issuerUrl: {{ default (printf "%s/v1/dex" .Values.global.ingress.controllerUrl) .Values.auth.oidcIssuerId }}
           clientId: {{ .Values.auth.oidcClientId }}
