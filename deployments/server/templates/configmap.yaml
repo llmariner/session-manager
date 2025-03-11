@@ -27,7 +27,7 @@ data:
           clientId: {{ .Values.auth.oidcClientId }}
           clientSecret: {{ .Values.auth.oidcClientSecret }}
           redirectUri:  {{ .Values.global.ingress.controllerUrl }}/v1/sessions/callback
-        enableOKta: {{ .Values.enableOkta }}
+        enableOkta: {{ .Values.enableOkta }}
         cacheExpiration: {{ .Values.auth.cacheExpiration }}
         cacheCleanup: {{ .Values.auth.cacheCleanup }}
         {{- end }}
