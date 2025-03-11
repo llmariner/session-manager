@@ -56,18 +56,22 @@ func (a *NoopAuthenticator) Authenticate(r *http.Request) (string, string, error
 type ExternalAuthenticator struct {
 	intercepter    reqIntercepter
 	rbacClient     rbacv1.RbacInternalServiceClient
-	tokenExchanger *TokenExchanger
+	tokenExchanger TokenExchanger
 	loginCache     *cache
 	enableSlurm    bool
+
+	// loginState is set only when using Okta for authentication.
+	loginState string
 }
 
 // NewExternalAuthenticator returns a new ExternalAuthenticator.
 func NewExternalAuthenticator(
 	ctx context.Context,
 	rbacServerAddr string,
-	tex *TokenExchanger,
+	tex TokenExchanger,
 	cacheExpiration, cacheCleanup time.Duration,
 	enableSlurm bool,
+	loginState string,
 ) (*ExternalAuthenticator, error) {
 	i, err := auth.NewInterceptor(ctx, auth.Config{
 		RBACServerAddr: rbacServerAddr,
@@ -95,6 +99,7 @@ func NewExternalAuthenticator(
 		tokenExchanger: tex,
 		loginCache:     newCacheWithCleaner(ctx, cacheExpiration, cacheCleanup),
 		enableSlurm:    enableSlurm,
+		loginState:     loginState,
 	}, nil
 }
 
@@ -107,11 +112,18 @@ func (a *ExternalAuthenticator) HandleLogin(w http.ResponseWriter, r *http.Reque
 		HttpOnly: true,
 	}
 	http.SetCookie(w, cookie)
-	http.Redirect(w, r, a.tokenExchanger.loginURL, http.StatusFound)
+	http.Redirect(w, r, a.tokenExchanger.getLoginURL(), http.StatusFound)
 }
 
 // HandleLoginCallback handles the login callback.
 func (a *ExternalAuthenticator) HandleLoginCallback(w http.ResponseWriter, r *http.Request) {
+	if a.loginState != "" {
+		state := r.FormValue("state")
+		if state != a.loginState {
+			http.Error(w, fmt.Sprintf("invalid oauth state: %s", r.FormValue("state")), http.StatusBadRequest)
+			return
+		}
+	}
 	if r.Method != http.MethodGet {
 		http.Error(w, fmt.Sprintf("method not implemented: %s", r.Method), http.StatusNotImplemented)
 		return

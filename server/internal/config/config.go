@@ -90,6 +90,7 @@ type Auth struct {
 	OIDC            OIDC            `yaml:"oidc"`
 	CacheExpiration time.Duration   `yaml:"cacheExpiration"`
 	CacheCleanup    time.Duration   `yaml:"cacheCleanup"`
+	EnableOkta      bool            `yaml:"enableOkta"`
 }
 
 func (a *Auth) validate() error {
@@ -102,8 +103,10 @@ func (a *Auth) validate() error {
 		return fmt.Errorf("rbacServer: %s", err)
 	}
 
-	if err := a.DexServer.validate(); err != nil {
-		return fmt.Errorf("dexServer: %s", err)
+	if a.DexServer != nil {
+		if err := a.DexServer.validate(); err != nil {
+			return fmt.Errorf("dexServer: %s", err)
+		}
 	}
 
 	if err := a.OIDC.validate(); err != nil {
@@ -154,9 +157,6 @@ type OIDC struct {
 func (o *OIDC) validate() error {
 	if o.ClientID == "" {
 		return fmt.Errorf("clientId must be set")
-	}
-	if o.ClientSecret == "" {
-		return fmt.Errorf("clientSecret must be set")
 	}
 	if o.IssuerURL == "" {
 		return fmt.Errorf("issuerUrl must be set")

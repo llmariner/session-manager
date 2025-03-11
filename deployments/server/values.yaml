@@ -136,14 +136,19 @@ allowedOriginHosts:
 # The auth setting to verify request.
 # These are the default values configured in https://github.com/llmariner/rbac-manager/blob/main/deployments/dex-server/templates/configmap.yaml#L60-L62.
 auth:
-  # the OIDC client ID.
+  # The OIDC client ID.
   oidcClientId: session-manager
-  # the OIDC client secret.
+  # The OIDC client secret.
   oidcClientSecret: o15FQlUB8SeOOBiw3Pg5vD5p
   # The valid period for the caching auth result.
   cacheExpiration: 1m
   # The period for cleaning up the cash.
   cacheCleanup: 15m
+  # The ID for the OIDC issuer.
+  oidcIssuerId: ""
+
+# The flag to use Okta directly for authentication.
+enableOkta: false
 
 slurm:
   # Enable request routing to Slurm control plane.
