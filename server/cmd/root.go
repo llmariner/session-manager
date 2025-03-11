@@ -59,34 +59,7 @@ func run(ctx context.Context, c *config.Config) error {
 	)
 
 	var tex auth.TokenExchanger
-	if c.Server.Auth.EnableOkta {
-		oauth2Config, err := newOauth2Config(ctx, c.Server.Auth.OIDC)
-		if err != nil {
-			return fmt.Errorf("new oauth2 config: %s", err)
-		}
-		// TODO(guangrui): Generate state and code verifier per login session.
-		state := getRandomString(64)
-		codeVerifier := getRandomString(64)
-		tex, err = auth.NewOktaTokenExchanger(oauth2Config, state, codeVerifier)
-		if err != nil {
-			return fmt.Errorf("new okta token exchanger: %w", err)
-		}
-		ea, err := auth.NewExternalAuthenticator(
-			ctx,
-			c.Server.Auth.RBACServer.Addr,
-			tex,
-			c.Server.Auth.CacheExpiration,
-			c.Server.Auth.CacheCleanup,
-			c.Server.Slurm.Enable,
-			state,
-		)
-		if err != nil {
-			return fmt.Errorf("new worker authenticator: %w", err)
-		}
-		eauth = ea
-		loginFn = ea.HandleLogin
-		callbackFn = ea.HandleLoginCallback
-	} else if c.Server.Auth.DexServer != nil {
+	if c.Server.Auth.DexServer != nil {
 		var err error
 		tex, err = auth.NewDexTokenExchanger(ctx, auth.TokenExchangerOptions{
 			ClientID:     c.Server.Auth.OIDC.ClientID,
@@ -107,6 +80,33 @@ func run(ctx context.Context, c *config.Config) error {
 			c.Server.Auth.CacheCleanup,
 			c.Server.Slurm.Enable,
 			"",
+		)
+		if err != nil {
+			return fmt.Errorf("new worker authenticator: %w", err)
+		}
+		eauth = ea
+		loginFn = ea.HandleLogin
+		callbackFn = ea.HandleLoginCallback
+	} else if c.Server.Auth.EnableOkta {
+		oauth2Config, err := newOauth2Config(ctx, c.Server.Auth.OIDC)
+		if err != nil {
+			return fmt.Errorf("new oauth2 config: %s", err)
+		}
+		// TODO(guangrui): Generate state and code verifier per login session.
+		state := getRandomString(64)
+		codeVerifier := getRandomString(64)
+		tex, err = auth.NewOktaTokenExchanger(oauth2Config, state, codeVerifier)
+		if err != nil {
+			return fmt.Errorf("new okta token exchanger: %w", err)
+		}
+		ea, err := auth.NewExternalAuthenticator(
+			ctx,
+			c.Server.Auth.RBACServer.Addr,
+			tex,
+			c.Server.Auth.CacheExpiration,
+			c.Server.Auth.CacheCleanup,
+			c.Server.Slurm.Enable,
+			state,
 		)
 		if err != nil {
 			return fmt.Errorf("new worker authenticator: %w", err)
