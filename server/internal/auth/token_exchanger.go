@@ -12,6 +12,12 @@ import (
 	"golang.org/x/oauth2"
 )
 
+// TokenExchanger exchanges a code for a token.
+type TokenExchanger interface {
+	obtainToken(ctx context.Context, code string) (string, error)
+	getLoginURL() string
+}
+
 // TokenExchangerOptions is the options for TokenExchanger.
 type TokenExchangerOptions struct {
 	ClientID     string
@@ -22,8 +28,10 @@ type TokenExchangerOptions struct {
 	DexServerAddr string
 }
 
-// NewTokenExchanger returns a new TokenExchanger.
-func NewTokenExchanger(ctx context.Context, opts TokenExchangerOptions) (*TokenExchanger, error) {
+var _ TokenExchanger = &DexTokenExchanger{}
+
+// NewDexTokenExchanger returns a new DexTokenExchanger.
+func NewDexTokenExchanger(ctx context.Context, opts TokenExchangerOptions) (*DexTokenExchanger, error) {
 	// Allow the issuer URL to be different from the discovery URL (= URL that is passed to oidc.newProvider()).
 	// This is required since the discovery URL is the Dex server URL.
 	pCtx := oidc.InsecureIssuerURLContext(ctx, opts.IssuerURL)
@@ -65,7 +73,7 @@ func NewTokenExchanger(ctx context.Context, opts TokenExchangerOptions) (*TokenE
 	q.Add("scope", "openid email")
 	loginURL.RawQuery = q.Encode()
 
-	return &TokenExchanger{
+	return &DexTokenExchanger{
 		loginURL: loginURL.String(),
 		verifier: provider.Verifier(&oidc.Config{ClientID: opts.ClientID}),
 		auth: &oauth2.Config{
@@ -78,8 +86,12 @@ func NewTokenExchanger(ctx context.Context, opts TokenExchangerOptions) (*TokenE
 	}, nil
 }
 
-// TokenExchanger exchanges the code for a token.
-type TokenExchanger struct {
+func (t *DexTokenExchanger) getLoginURL() string {
+	return t.loginURL
+}
+
+// DexTokenExchanger exchanges the code for a token with Dex server.
+type DexTokenExchanger struct {
 	loginURL string
 	auth     *oauth2.Config
 	verifier *oidc.IDTokenVerifier
@@ -87,7 +99,7 @@ type TokenExchanger struct {
 	httpClient *http.Client
 }
 
-func (t *TokenExchanger) obtainToken(ctx context.Context, code string) (string, error) {
+func (t *DexTokenExchanger) obtainToken(ctx context.Context, code string) (string, error) {
 	ctx = oidc.ClientContext(ctx, t.httpClient)
 	token, err := t.auth.Exchange(ctx, code)
 	if err != nil {

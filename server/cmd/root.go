@@ -4,8 +4,10 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"math/rand"
 	"net/http"
 
+	"github.com/coreos/go-oidc"
 	"github.com/llmariner/session-manager/server/internal/admin"
 	"github.com/llmariner/session-manager/server/internal/auth"
 	"github.com/llmariner/session-manager/server/internal/config"
@@ -13,6 +15,7 @@ import (
 	"github.com/llmariner/session-manager/server/internal/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
+	"golang.org/x/oauth2"
 	"k8s.io/klog/v2"
 )
 
@@ -54,8 +57,11 @@ func run(ctx context.Context, c *config.Config) error {
 		loginFn    http.HandlerFunc
 		callbackFn http.HandlerFunc
 	)
+
+	var tex auth.TokenExchanger
 	if c.Server.Auth.DexServer != nil {
-		tex, err := auth.NewTokenExchanger(ctx, auth.TokenExchangerOptions{
+		var err error
+		tex, err = auth.NewDexTokenExchanger(ctx, auth.TokenExchangerOptions{
 			ClientID:     c.Server.Auth.OIDC.ClientID,
 			ClientSecret: c.Server.Auth.OIDC.ClientSecret,
 			IssuerURL:    c.Server.Auth.OIDC.IssuerURL,
@@ -64,7 +70,7 @@ func run(ctx context.Context, c *config.Config) error {
 			DexServerAddr: c.Server.Auth.DexServer.Addr,
 		})
 		if err != nil {
-			return fmt.Errorf("new token exchanger: %w", err)
+			return fmt.Errorf("new dex token exchanger: %w", err)
 		}
 		ea, err := auth.NewExternalAuthenticator(
 			ctx,
@@ -73,6 +79,34 @@ func run(ctx context.Context, c *config.Config) error {
 			c.Server.Auth.CacheExpiration,
 			c.Server.Auth.CacheCleanup,
 			c.Server.Slurm.Enable,
+			"",
+		)
+		if err != nil {
+			return fmt.Errorf("new worker authenticator: %w", err)
+		}
+		eauth = ea
+		loginFn = ea.HandleLogin
+		callbackFn = ea.HandleLoginCallback
+	} else if c.Server.Auth.EnableOkta {
+		oauth2Config, err := newOauth2Config(ctx, c.Server.Auth.OIDC)
+		if err != nil {
+			return fmt.Errorf("new oauth2 config: %s", err)
+		}
+		// TODO(guangrui): Generate state and code verifier per login session.
+		state := getRandomString(64)
+		codeVerifier := getRandomString(64)
+		tex, err = auth.NewOktaTokenExchanger(oauth2Config, state, codeVerifier)
+		if err != nil {
+			return fmt.Errorf("new okta token exchanger: %w", err)
+		}
+		ea, err := auth.NewExternalAuthenticator(
+			ctx,
+			c.Server.Auth.RBACServer.Addr,
+			tex,
+			c.Server.Auth.CacheExpiration,
+			c.Server.Auth.CacheCleanup,
+			c.Server.Slurm.Enable,
+			state,
 		)
 		if err != nil {
 			return fmt.Errorf("new worker authenticator: %w", err)
@@ -138,6 +172,31 @@ func run(ctx context.Context, c *config.Config) error {
 	}
 	return err
 
+}
+
+// newOauth2Config creates a new oauth2 config.
+func newOauth2Config(ctx context.Context, c config.OIDC) (*oauth2.Config, error) {
+	ctx = oidc.ClientContext(ctx, http.DefaultClient)
+	provider, err := oidc.NewProvider(ctx, c.IssuerURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get provider: %s", err)
+	}
+	return &oauth2.Config{
+		ClientID:     c.ClientID,
+		ClientSecret: c.ClientSecret,
+		Endpoint:     provider.Endpoint(),
+		RedirectURL:  c.RedirectURI,
+		Scopes:       []string{"openid", "profile", "email", "offline_access"},
+	}, nil
+}
+
+func getRandomString(n int) string {
+	letterRunes := []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~")
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return string(b)
 }
 
 func init() {

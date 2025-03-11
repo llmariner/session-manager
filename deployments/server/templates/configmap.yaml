@@ -23,10 +23,11 @@ data:
         dexServer:
           addr: {{ .Values.global.auth.dexServerAddr }}
         oidc:
-          issuerUrl: {{ .Values.global.ingress.controllerUrl }}/v1/dex
+          issuerUrl: {{ default (printf "%s/v1/dex" .Values.global.ingress.controllerUrl) .Values.auth.oidcIssuerId }}
           clientId: {{ .Values.auth.oidcClientId }}
           clientSecret: {{ .Values.auth.oidcClientSecret }}
           redirectUri:  {{ .Values.global.ingress.controllerUrl }}/v1/sessions/callback
+        enableOKta: {{ .Values.enableOkta }}
         cacheExpiration: {{ .Values.auth.cacheExpiration }}
         cacheCleanup: {{ .Values.auth.cacheCleanup }}
         {{- end }}
