@@ -41,3 +41,14 @@ rules:
   - create
   - patch
   - delete
+- apiGroups:
+  - jobset.x-k8s.io
+  resources:
+  - jobsets
+  verbs:
+  - get
+  - list
+  - create
+  - watch
+  - patch
+  - delete
