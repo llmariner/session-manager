@@ -83,6 +83,9 @@ proxy:
 # If enabled, show the debugging logs of the session-manager-agent.
 debugLogging: true
 
+# Namespace where NVIDIA GPU Operator runs.
+gpuOperatorNamespace: nvidia
+
 # Override the "session-manager-agent.fullname" value. This value is used
 # as part of most of the names of the resources created by this Helm chart.
 # +docs:property
