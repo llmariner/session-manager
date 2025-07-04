@@ -39,3 +39,4 @@ data:
       {{- end }}
       slurm:
         enable: {{ .Values.slurm.enable }}
+      gpuOperatorNamespace: {{ .Values.gpuOperatorNamespace }}

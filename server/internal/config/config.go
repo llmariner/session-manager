@@ -39,6 +39,8 @@ type Server struct {
 	AllowedOriginHosts []string `yaml:"allowedOriginHosts"`
 
 	Slurm Slurm `yaml:"slurm"`
+
+	GPUOperatorNamespace string `yaml:"gpuOperatorNamespace"`
 }
 
 func (s *Server) validate() error {
@@ -57,6 +59,10 @@ func (s *Server) validate() error {
 		if err := s.TLS.validate(); err != nil {
 			return err
 		}
+	}
+
+	if s.GPUOperatorNamespace == "" {
+		return fmt.Errorf("gpuOperatorNamespace must be set")
 	}
 
 	return nil
