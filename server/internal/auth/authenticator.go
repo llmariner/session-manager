@@ -60,6 +60,8 @@ type ExternalAuthenticator struct {
 	loginCache     *cache
 	enableSlurm    bool
 
+	gpuOperatorNamespace string
+
 	// loginState is set only when using Okta for authentication.
 	loginState string
 }
@@ -71,6 +73,7 @@ func NewExternalAuthenticator(
 	tex TokenExchanger,
 	cacheExpiration, cacheCleanup time.Duration,
 	enableSlurm bool,
+	gpuOperatorNamespace string,
 	loginState string,
 ) (*ExternalAuthenticator, error) {
 	i, err := auth.NewInterceptor(ctx, auth.Config{
@@ -99,7 +102,10 @@ func NewExternalAuthenticator(
 		tokenExchanger: tex,
 		loginCache:     newCacheWithCleaner(ctx, cacheExpiration, cacheCleanup),
 		enableSlurm:    enableSlurm,
-		loginState:     loginState,
+
+		gpuOperatorNamespace: gpuOperatorNamespace,
+
+		loginState: loginState,
 	}, nil
 }
 
@@ -196,7 +202,19 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 		}
 
 		if !found {
-			return "", "", ErrUnauthorized
+			if route.apiServerRoute.namespace != a.gpuOperatorNamespace {
+				return "", "", ErrUnauthorized
+			}
+
+			// If the namespace is for GPU operator, allow the access to the namespace if
+			// the user can access "api.clusters".
+			token, ok := extractTokenFromAuthHeader(r.Header)
+			if !ok {
+				return "", "", ErrUnauthorized
+			}
+			if !a.authorizeResourceAccess(r.Context(), token, "api.clusters", "write") {
+				return "", "", ErrUnauthorized
+			}
 		}
 
 		return route.clusterID, route.path, nil
@@ -242,19 +260,31 @@ func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route
 		return nil
 	}
 
-	resp, err := a.rbacClient.Authorize(r.Context(), &rbacv1.AuthorizeRequest{
-		// TODO(aya): revisit
-		Token:          token,
-		AccessResource: "api.workspaces.notebooks",
-		Capability:     "read",
-	})
-	if err != nil || !resp.Authorized {
-		klog.V(2).Infof("failed to authorize token: %s (%+v)", err, resp)
+	// TODO(aya): revisit
+	if !a.authorizeResourceAccess(r.Context(), token, "api.workspaces.notebooks", "read") {
 		return ErrLoginRequired
 	}
 
 	a.loginCache.set(token, route.ingressRoute.service)
 	return nil
+}
+
+func (a *ExternalAuthenticator) authorizeResourceAccess(
+	ctx context.Context,
+	token,
+	accessResource,
+	capability string,
+) bool {
+	resp, err := a.rbacClient.Authorize(ctx, &rbacv1.AuthorizeRequest{
+		Token:          token,
+		AccessResource: accessResource,
+		Capability:     capability,
+	})
+	if err != nil || !resp.Authorized {
+		klog.V(2).Infof("failed to authorize token: %s (%+v)", err, resp)
+		return false
+	}
+	return true
 }
 
 type reqWorkerIntercepter interface {
@@ -366,4 +396,12 @@ func extractRoute(origPath string) (route, bool) {
 		route.apiServerRoute.clusterScope = true
 	}
 	return route, true
+}
+
+func extractTokenFromAuthHeader(header http.Header) (string, bool) {
+	auth := header.Get("Authorization")
+	if len(auth) < 1 {
+		return "", false
+	}
+	return strings.TrimPrefix(auth, "Bearer "), true
 }

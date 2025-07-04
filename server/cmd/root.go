@@ -79,6 +79,7 @@ func run(ctx context.Context, c *config.Config) error {
 			c.Server.Auth.CacheExpiration,
 			c.Server.Auth.CacheCleanup,
 			c.Server.Slurm.Enable,
+			c.Server.GPUOperatorNamespace,
 			"",
 		)
 		if err != nil {
@@ -106,6 +107,7 @@ func run(ctx context.Context, c *config.Config) error {
 			c.Server.Auth.CacheExpiration,
 			c.Server.Auth.CacheCleanup,
 			c.Server.Slurm.Enable,
+			c.Server.GPUOperatorNamespace,
 			state,
 		)
 		if err != nil {
