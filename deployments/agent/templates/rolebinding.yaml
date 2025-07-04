@@ -1,0 +1,15 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "session-manager-agent.fullname" . }}
+  namespace: {{ .Values.gpuOperatorNamespace }}
+  labels:
+    {{- include "session-manager-agent.labels" . | nindent 4 }}
+subjects:
+- kind: ServiceAccount
+  name: {{ include "session-manager-agent.serviceAccountName" . }}
+  namespace: {{ .Release.Namespace }}
+roleRef:
+  kind: ClusterRole
+  name: {{ include "session-manager-agent.fullname" . }}-gpu-operator-configmap
+  apiGroup: rbac.authorization.k8s.io
