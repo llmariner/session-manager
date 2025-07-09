@@ -30,15 +30,22 @@ spec:
         {{- if .Values.debugLogging | default false | eq true }}
         - -v=10
         {{- end }}
+        env:
         {{- with .Values.global.worker.registrationKeySecret }}
         {{- if .name }}
-        env:
         - name: LLMO_CLUSTER_REGISTRATION_KEY
           valueFrom:
             secretKeyRef:
               name: {{ .name }}
               key: {{ .key }}
         {{- end }}
+        {{- end }}
+        {{- with .Values.agent.env }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.agent.envFrom }}
+        envFrom:
+        {{- toYaml . | nindent 8 }}
         {{- end }}
         volumeMounts:
         - name: config
@@ -67,6 +74,14 @@ spec:
         {{- if .Values.debugLogging | default false | eq true }}
         - --log-level
         - trace
+        {{- end }}
+        {{- with .Values.envoy.env }}
+        env:
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.envoy.envFrom }}
+        envFrom:
+        {{- toYaml . | nindent 8 }}
         {{- end }}
         securityContext:
           runAsUser: 101
