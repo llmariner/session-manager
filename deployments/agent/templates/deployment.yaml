@@ -40,12 +40,14 @@ spec:
               key: {{ .key }}
         {{- end }}
         {{- end }}
-        {{- with .Values.agent.env }}
+        {{- with .Values.agent }}
+          {{- with .env }}
         {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- with .Values.agent.envFrom }}
+          {{- end }}
+          {{- with .envFrom }}
         envFrom:
         {{- toYaml . | nindent 8 }}
+          {{- end }}
         {{- end }}
         volumeMounts:
         - name: config
@@ -75,13 +77,15 @@ spec:
         - --log-level
         - trace
         {{- end }}
-        {{- with .Values.envoy.env }}
+        {{- with .Values.envoy }}
+          {{- with .env }}
         env:
         {{- toYaml . | nindent 8 }}
-        {{- end }}
-        {{- with .Values.envoy.envFrom }}
+          {{- end }}
+          {{- with .envFrom }}
         envFrom:
         {{- toYaml . | nindent 8 }}
+          {{- end }}
         {{- end }}
         securityContext:
           runAsUser: 101
