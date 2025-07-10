@@ -43,6 +43,16 @@ spec:
         - name: ws-http
           containerPort: {{ .Values.workerServiceHttpPort }}
           protocol: TCP
+        {{- with .Values.proxy }}
+          {{- with .env }}
+        env:
+        {{- toYaml . | nindent 8 }}
+          {{- end }}
+          {{- with .envFrom }}
+        envFrom:
+        {{- toYaml . | nindent 8 }}
+          {{- end }}
+        {{- end }}
         livenessProbe:
           tcpSocket:
             port: {{ .Values.adminPort }}
