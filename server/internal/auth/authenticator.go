@@ -246,12 +246,22 @@ func (a *ExternalAuthenticator) Authenticate(r *http.Request) (string, string, e
 }
 
 func (a *ExternalAuthenticator) authenticateService(r *http.Request, route route) error {
+	var token string
 	cookie, err := r.Cookie(cookieNameToken)
 	if cookie == nil || cookie.Value == "" {
 		klog.V(2).Infof("failed to get a cookie: %s", err)
-		return ErrLoginRequired
+		// Fall back to the Authorization header. This is for the case where
+		// the request is forwarded to an HTTP server (e.g., vLLM) running inside a Jupyter Notebook.
+		// Such a request can be made from a non-browser client, so we need to support it.
+		var ok bool
+		token, ok = extractTokenFromAuthHeader(r.Header)
+		if !ok {
+			klog.V(2).Infof("failed to get a token from the Authorization header: %s", err)
+			return ErrLoginRequired
+		}
+	} else {
+		token = cookie.Value
 	}
-	token := cookie.Value
 
 	v, ok := a.loginCache.get(token)
 	if ok && v == route.ingressRoute.service {

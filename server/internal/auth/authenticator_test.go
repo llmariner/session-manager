@@ -206,6 +206,27 @@ func TestExternalAuthenticatorTest(t *testing.T) {
 			wantClusterID: "my-cluster",
 			wantPath:      "/v1/sessions/my-cluster/v1/services/notebooks/nid",
 		},
+		{
+			name: "ingress path with authorization token",
+			req: &http.Request{
+				URL: &url.URL{
+					Path: "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+				},
+				Header: http.Header{
+					"Authorization": []string{"token"},
+				},
+			},
+			userInfo: auth.UserInfo{
+				AssignedKubernetesEnvs: []auth.AssignedKubernetesEnv{
+					{
+						ClusterID: "my-cluster",
+						Namespace: "my-namespace",
+					},
+				},
+			},
+			wantClusterID: "my-cluster",
+			wantPath:      "/v1/sessions/my-cluster/v1/services/notebooks/nid",
+		},
 	}
 
 	for _, tc := range tcs {
