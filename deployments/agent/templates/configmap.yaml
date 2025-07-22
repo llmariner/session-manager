@@ -88,12 +88,6 @@ data:
                       idle_timeout: 0s
                       # Explicitly disable timeout as we have a long-running request like 'kubectl logs -f'.
                       timeout: 0s
-                  - match:
-                      prefix: "/v1/sessions"
-                    route:
-                      cluster: services
-                      idle_timeout: 0s
-                      timeout: 0s
                  {{- if .Values.proxy.slurm.enable }}
                   - match:
                       prefix: "/slurm"
@@ -102,6 +96,12 @@ data:
                       idle_timeout: 0s
                       timeout: 0s
                  {{- end }}
+                  - match:
+                      prefix: "/"
+                    route:
+                      cluster: services
+                      idle_timeout: 0s
+                      timeout: 0s
               http_filters:
               - name: envoy.filters.http.lua
                 typed_config:
@@ -126,7 +126,13 @@ data:
                     function envoy_on_request(request_handle)
                       local path = request_handle:headers():get(":path")
                       if starts_with(path, "/v1/sessions") then
-                        request_handle:headers():replace(":authority", string.gsub(path, "/v1/sessions/[^/]+/v1/services/notebooks/([^/]+)/([^/?]+).*", "%1.%2.svc.cluster.local:8888"))
+                        local name, namespace, port, new_path = string.match(path, "/v1/sessions/[^/]+/v1/services/notebooks/([^/]+)/([^/]+)/(%d+)/(.*)")
+                        if name and namespace and port and new_path then
+                          request_handle:headers():replace(":authority", name .. "." .. namespace .. ".svc.cluster.local:" .. port)
+                          request_handle:headers():replace(":path", "/" .. new_path)
+                        else
+                          request_handle:headers():replace(":authority", string.gsub(path, "/v1/sessions/[^/]+/v1/services/notebooks/([^/]+)/([^/?]+).*", "%1.%2.svc.cluster.local:8888"))
+                        end
                       end
                     end
               - name: envoy.filters.http.dynamic_forward_proxy
