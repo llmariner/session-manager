@@ -105,7 +105,7 @@ func (t *UpgradeProxy) Proxy(w http.ResponseWriter, r *http.Request) {
 	resp, err := tr.RoundTrip(r)
 	if err != nil {
 		msg := fmt.Sprintf("failed to proxy request: %s", err)
-		klog.Infof(msg)
+		klog.Info(msg)
 		http.Error(w, fmt.Sprintf("Server Error: %s", msg), http.StatusInternalServerError)
 		return
 	}
@@ -118,7 +118,7 @@ func (t *UpgradeProxy) Proxy(w http.ResponseWriter, r *http.Request) {
 	if resp.StatusCode != http.StatusSwitchingProtocols {
 		b, _ := io.ReadAll(resp.Body)
 		msg := fmt.Sprintf("could not switch protocols; statusCode=%d; status=%s; body=%s", resp.StatusCode, resp.Status, string(b))
-		klog.Warningf(msg)
+		klog.Warning(msg)
 		http.Error(w, string(b), resp.StatusCode)
 		return
 	}
